@@ -25,6 +25,8 @@ export function PublicNavbar() {
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
 
+  if (pathname.startsWith('/builder')) return null
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
