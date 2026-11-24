@@ -1,61 +1,102 @@
-import { redirect } from "next/navigation"
+import Link from 'next/link'
 
-import { AppSidebar } from "@/components/app-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { DataTable } from "@/components/data-table"
-import { SectionCards } from "@/components/section-cards"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { createClient } from "@/lib/supabase/server"
+import { PageBody, PageHeader } from '@/components/cms/page-header'
+import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatDate } from '@/lib/cms'
+import { createClient } from '@/lib/supabase/server'
 
-import data from "./data.json"
+type Recent = { id: string; title: string; status: string; updated_at: string; kind: 'Project' | 'Blog'; href: string }
 
-export default async function Page() {
-  const supabase = await createClient()
-
-  const { data: auth, error } = await supabase.auth.getClaims()
-  if (error || !auth?.claims) {
-    redirect("/auth/login")
+export default async function DashboardPage() {
+  const db = await createClient()
+  const count = (table: string, filter?: (q: any) => any) => {
+    const q = db.from(table).select('*', { count: 'exact', head: true })
+    return filter ? filter(q) : q
   }
 
-  const claims = auth.claims as {
-    email?: string
-    user_metadata?: { full_name?: string; name?: string; avatar_url?: string }
-  }
-  const email = claims.email ?? ""
-  const user = {
-    name:
-      claims.user_metadata?.full_name ??
-      claims.user_metadata?.name ??
-      email.split("@")[0],
-    email,
-    avatar: claims.user_metadata?.avatar_url ?? "",
-  }
+  const [projects, projectsLive, posts, postsLive, categories, queue, recentProjects, recentPosts] =
+    await Promise.all([
+      count('projects'),
+      count('projects', (q) => q.eq('status', 'published')),
+      count('blog_posts'),
+      count('blog_posts', (q) => q.eq('status', 'published')),
+      count('categories'),
+      count('queue_share', (q) => q.eq('is_posted', false)),
+      db.from('projects').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
+      db.from('blog_posts').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
+    ])
+
+  const recent: Recent[] = [
+    ...(recentProjects.data ?? []).map((r) => ({ ...r, kind: 'Project' as const, href: `/builder/projects/${r.id}` })),
+    ...(recentPosts.data ?? []).map((r) => ({ ...r, kind: 'Blog' as const, href: `/builder/blog/${r.id}` })),
+  ]
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    .slice(0, 8)
+
+  const stats = [
+    { label: 'Projects', value: projectsLive.count ?? 0, note: `${projects.count ?? 0} total, published / all` , href: '/builder/projects' },
+    { label: 'Blog posts', value: postsLive.count ?? 0, note: `${posts.count ?? 0} total, published / all`, href: '/builder/blog' },
+    { label: 'Categories', value: categories.count ?? 0, note: 'Shared by projects and posts', href: '/builder/categories' },
+    { label: 'Share queue', value: queue.count ?? 0, note: 'Waiting to be posted', href: '/builder/queue' },
+  ]
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" user={user} />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-              <DataTable data={data} />
-            </div>
+    <PageBody>
+      <PageHeader
+        title="Overview"
+        description="Content on your public portfolio, straight from Supabase."
+        actions={
+          <div className="flex gap-2">
+            <Link href="/builder/projects/new" className={buttonVariants({ size: 'sm' })}>New project</Link>
+            <Link href="/builder/blog/new" className={buttonVariants({ size: 'sm', variant: 'outline' })}>New post</Link>
           </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map((s) => (
+          <Link key={s.label} href={s.href}>
+            <Card className="h-full transition-colors hover:bg-muted/40">
+              <CardHeader>
+                <CardDescription>{s.label}</CardDescription>
+                <CardTitle className="text-2xl font-semibold tabular-nums">{s.value}</CardTitle>
+                <p className="text-xs text-muted-foreground">{s.note}</p>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      <h3 className="text-sm font-medium">Recently updated</h3>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Updated</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {recent.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-muted-foreground">Nothing yet. Create your first project or post.</TableCell>
+            </TableRow>
+          ) : (
+            recent.map((r) => (
+              <TableRow key={`${r.kind}-${r.id}`}>
+                <TableCell><Link href={r.href} className="font-medium hover:underline">{r.title}</Link></TableCell>
+                <TableCell>{r.kind}</TableCell>
+                <TableCell><Badge variant={r.status === 'published' ? 'default' : 'secondary'}>{r.status}</Badge></TableCell>
+                <TableCell>{formatDate(r.updated_at)}</TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </PageBody>
   )
 }
