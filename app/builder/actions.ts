@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
+import { normalizeResume } from '@/lib/resume'
 import { slugify, type ContentSource, type PublishStatus } from '@/lib/cms'
 
 type Db = Awaited<ReturnType<typeof createClient>>
@@ -252,4 +253,28 @@ export async function setQueuePosted(formData: FormData) {
   revalidatePath('/builder', 'layout')
   updateTag('content')
   redirect('/builder/queue')
+}
+
+// ---------- Resume ----------
+export async function saveResume(formData: FormData) {
+  const db = await requireDb()
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw(formData, 'resume_json'))
+  } catch {
+    fail('/builder/resume', 'Could not read the form data. Please try again.')
+  }
+
+  const data = normalizeResume(parsed)
+  if (!data.name.trim()) fail('/builder/resume', 'Name is required.')
+
+  const { error } = await db
+    .from('resume')
+    .upsert({ id: 'default', data, updated_at: new Date().toISOString() })
+  if (error) fail('/builder/resume', error.message)
+
+  revalidatePath('/builder', 'layout')
+  updateTag('content')
+  redirect('/builder/resume?saved=1')
 }

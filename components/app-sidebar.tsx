@@ -23,6 +23,8 @@ import {
   Database01Icon,
   Settings05Icon,
   CommandIcon,
+  UserIcon,
+  Mail01Icon,
 } from "@hugeicons/core-free-icons"
 
 const navMain = [
@@ -30,6 +32,8 @@ const navMain = [
   { title: "Projects", url: "/builder/projects", icon: <HugeiconsIcon icon={Folder01Icon} strokeWidth={2} /> },
   { title: "Blog", url: "/builder/blog", icon: <HugeiconsIcon icon={File01Icon} strokeWidth={2} /> },
   { title: "Categories", url: "/builder/categories", icon: <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} /> },
+  { title: "Resume", url: "/builder/resume", icon: <HugeiconsIcon icon={UserIcon} strokeWidth={2} /> },
+  { title: "Cover letter", url: "/builder/cover-letter", icon: <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} /> },
   { title: "Share queue", url: "/builder/queue", icon: <HugeiconsIcon icon={Database01Icon} strokeWidth={2} /> },
   { title: "Site settings", url: "/builder/settings", icon: <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} /> },
 ]

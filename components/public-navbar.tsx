@@ -14,6 +14,8 @@ const links = [
   { href: '/blog', label: 'Blog' },
   { href: '/projects', label: 'Projects' },
   { href: '/graph', label: 'Graph' },
+  { href: '/resume', label: 'Resume' },
+  { href: '/cover-letter', label: 'Cover Letter' },
 ]
 
 function isActivePath(pathname: string, href: string) {
@@ -28,7 +30,7 @@ export function PublicNavbar() {
   if (pathname.startsWith('/builder')) return null
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur print:hidden">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <span className="flex size-8 items-center justify-center bg-primary text-primary-foreground">

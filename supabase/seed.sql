@@ -112,3 +112,49 @@ on conflict do nothing;
 -- Mark one as already posted so the queue shows both states.
 update public.queue_share set is_posted = true
 where blog_post_id = 'b0000000-0000-4000-8000-000000000001';
+
+-- ---------- Resume ----------
+-- `do nothing` so re-running the seed never overwrites what you edited in /builder/resume.
+insert into public.resume (id, data) values ('default', $json$
+{
+  "name": "Rivando Al Rasyid",
+  "title": "Full-Stack Web Developer",
+  "email": "hello@example.com",
+  "phone": "+62 800 0000 0000",
+  "location": "West Java, Indonesia",
+  "website": "example.com",
+  "links": [
+    { "label": "GitHub", "href": "https://github.com" },
+    { "label": "LinkedIn", "href": "https://linkedin.com" }
+  ],
+  "summary": "Full-stack developer who builds fast, maintainable web products with Next.js, TypeScript and Supabase, and cares about the details between design and data.",
+  "skills": ["TypeScript", "Next.js", "React", "Node.js", "Supabase", "PostgreSQL", "Tailwind CSS", "REST APIs", "Git"],
+  "experience": [
+    {
+      "role": "Full-Stack Developer",
+      "company": "Company Name",
+      "period": "2023 – Present",
+      "location": "Remote",
+      "points": [
+        "Built and shipped customer-facing features with Next.js and Supabase.",
+        "Cut page load times by moving data fetching to cached server components.",
+        "Designed database schemas and Row Level Security policies for multi-role apps."
+      ]
+    },
+    {
+      "role": "Junior Web Developer",
+      "company": "Previous Company",
+      "period": "2021 – 2023",
+      "location": "Jakarta, Indonesia",
+      "points": [
+        "Developed responsive interfaces in React and Tailwind CSS.",
+        "Integrated third-party REST APIs and wrote reusable component libraries."
+      ]
+    }
+  ],
+  "education": [
+    { "school": "University Name", "degree": "B.Sc. in Computer Science", "period": "2017 – 2021" }
+  ]
+}
+$json$::jsonb)
+on conflict (id) do nothing;

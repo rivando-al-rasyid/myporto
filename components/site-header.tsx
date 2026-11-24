@@ -10,6 +10,8 @@ const titles: Record<string, string> = {
   projects: "Projects",
   blog: "Blog",
   categories: "Categories",
+  resume: "Resume",
+  "cover-letter": "Cover letter",
   queue: "Share queue",
   settings: "Site settings",
 }
