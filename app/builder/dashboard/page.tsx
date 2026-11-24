@@ -1,13 +1,37 @@
+import { redirect } from "next/navigation"
+
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { createClient } from "@/lib/supabase/server"
 
 import data from "./data.json"
 
-export default function Page() {
+export default async function Page() {
+  const supabase = await createClient()
+
+  const { data: auth, error } = await supabase.auth.getClaims()
+  if (error || !auth?.claims) {
+    redirect("/auth/login")
+  }
+
+  const claims = auth.claims as {
+    email?: string
+    user_metadata?: { full_name?: string; name?: string; avatar_url?: string }
+  }
+  const email = claims.email ?? ""
+  const user = {
+    name:
+      claims.user_metadata?.full_name ??
+      claims.user_metadata?.name ??
+      email.split("@")[0],
+    email,
+    avatar: claims.user_metadata?.avatar_url ?? "",
+  }
+
   return (
     <SidebarProvider
       style={
@@ -17,7 +41,7 @@ export default function Page() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar variant="inset" user={user} />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
