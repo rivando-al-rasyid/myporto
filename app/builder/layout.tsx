@@ -1,3 +1,4 @@
+import { Suspense, type ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 
 import { AppSidebar } from '@/components/app-sidebar'
@@ -6,7 +7,15 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { createClient } from '@/lib/supabase/server'
 
 // Guards every route under /builder and renders the shared dashboard shell.
-export default async function BuilderLayout({ children }: { children: React.ReactNode }) {
+export default function BuilderLayout({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <BuilderShell>{children}</BuilderShell>
+    </Suspense>
+  )
+}
+
+async function BuilderShell({ children }: { children: ReactNode }) {
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.getClaims()

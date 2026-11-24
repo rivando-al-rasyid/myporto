@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
@@ -103,6 +103,7 @@ export async function saveProject(formData: FormData) {
 
   await syncCategories(db, 'project_categories', 'project_id', data.id, categoryIds(formData))
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/projects')
 }
 
@@ -110,6 +111,7 @@ export async function deleteProject(formData: FormData) {
   const db = await requireDb()
   await db.from('projects').delete().eq('id', str(formData, 'id'))
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/projects')
 }
 
@@ -175,6 +177,7 @@ export async function saveBlogPost(formData: FormData) {
 
   await syncCategories(db, 'blog_post_categories', 'blog_post_id', data.id, categoryIds(formData))
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/blog')
 }
 
@@ -182,6 +185,7 @@ export async function deleteBlogPost(formData: FormData) {
   const db = await requireDb()
   await db.from('blog_posts').delete().eq('id', str(formData, 'id'))
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/blog')
 }
 
@@ -202,6 +206,7 @@ export async function saveCategory(formData: FormData) {
   if (error) fail('/builder/categories', dbMessage(error))
 
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/categories')
 }
 
@@ -209,6 +214,7 @@ export async function deleteCategory(formData: FormData) {
   const db = await requireDb()
   await db.from('categories').delete().eq('id', str(formData, 'id'))
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/categories')
 }
 
@@ -229,6 +235,7 @@ export async function saveSettings(formData: FormData) {
   })
   if (error) fail('/builder/settings', error.message)
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/settings?saved=1')
 }
 
@@ -243,5 +250,6 @@ export async function setQueuePosted(formData: FormData) {
     })
     .eq('id', str(formData, 'id'))
   revalidatePath('/builder', 'layout')
+  updateTag('content')
   redirect('/builder/queue')
 }

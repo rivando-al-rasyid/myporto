@@ -27,6 +27,7 @@ export interface BlogPost {
   published_at: string | null
   created_at: string
   updated_at: string
+  categories?: Category[]
 }
 
 export interface Project {
@@ -47,6 +48,7 @@ export interface Project {
   meta_description: string | null
   created_at: string
   updated_at: string
+  categories?: Category[]
 }
 
 export interface SiteSettings {
