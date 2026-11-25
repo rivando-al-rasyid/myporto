@@ -12,19 +12,19 @@ type Recent = { id: string; title: string; status: string; updated_at: string; k
 
 export default async function DashboardPage() {
   const db = await createClient()
-  const count = (table: string, filter?: (q: any) => any) => {
+  const count = (table: string, where?: { column: string; value: string | boolean }) => {
     const q = db.from(table).select('*', { count: 'exact', head: true })
-    return filter ? filter(q) : q
+    return where ? q.eq(where.column, where.value) : q
   }
 
   const [projects, projectsLive, posts, postsLive, categories, queue, recentProjects, recentPosts] =
     await Promise.all([
       count('projects'),
-      count('projects', (q) => q.eq('status', 'published')),
+      count('projects', { column: 'status', value: 'published' }),
       count('blog_posts'),
-      count('blog_posts', (q) => q.eq('status', 'published')),
+      count('blog_posts', { column: 'status', value: 'published' }),
       count('categories'),
-      count('queue_share', (q) => q.eq('is_posted', false)),
+      count('queue_share', { column: 'is_posted', value: false }),
       db.from('projects').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
       db.from('blog_posts').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
     ])
