@@ -42,7 +42,7 @@ export function BlogForm({
       </div>
       <TextField label="Canonical URL" name="canonical_url" defaultValue={post?.canonical_url} />
 
-      <div className="grid items-end gap-4 md:grid-cols-3">
+      <div className="grid items-end gap-4 md:grid-cols-4">
         <SelectField
           label="Status"
           name="status"
@@ -54,6 +54,7 @@ export function BlogForm({
         />
         <TextField label="Sort order" name="sort_order" type="number" defaultValue={post?.sort_order ?? 100} hint="Lower shows first." />
         <CheckField label="Featured" name="is_featured" defaultChecked={post?.is_featured} />
+        {post ? <CheckField label="Share again on social media" name="share_again" /> : null}
       </div>
 
       <div className="flex gap-2">

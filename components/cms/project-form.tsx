@@ -57,7 +57,7 @@ export function ProjectForm({
         <TextField label="Meta description" name="meta_description" defaultValue={project?.meta_description} />
       </div>
 
-      <div className="grid items-end gap-4 md:grid-cols-3">
+      <div className="grid items-end gap-4 md:grid-cols-4">
         <SelectField
           label="Status"
           name="status"
@@ -69,6 +69,7 @@ export function ProjectForm({
         />
         <TextField label="Sort order" name="sort_order" type="number" defaultValue={project?.sort_order ?? 100} hint="Lower shows first." />
         <CheckField label="Featured" name="is_featured" defaultChecked={project?.is_featured} />
+        {project ? <CheckField label="Share again on social media" name="share_again" /> : null}
       </div>
 
       <div className="flex gap-2">
