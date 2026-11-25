@@ -170,8 +170,10 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
       <div><SubmitButton>Save resume</SubmitButton></div>
     </form>
 
-    <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">
-      <ResumePdfPreview data={payload} />
+    <div className="flex min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:self-start">
+      <p className="text-xs text-muted-foreground">Preview shows your last saved version. Click Save resume to update it.</p>
+      {/* `initial` is the saved data from the server, so the preview only changes after a save. */}
+      <ResumePdfPreview data={initial} />
     </div>
     </div>
   )
