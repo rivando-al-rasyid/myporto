@@ -1,4 +1,4 @@
-import type { ResumeData } from '@/lib/resume'
+import { allSkills, type ResumeData } from '@/lib/resume'
 
 export type LetterTone = 'professional' | 'friendly' | 'concise'
 
@@ -18,10 +18,19 @@ function list(items: string[]) {
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
 }
 
+// "Go (Golang)" should match a job description that says either "go" or "golang".
+function skillTerms(skill: string) {
+  const alias = skill.match(/\(([^)]+)\)/)?.[1]
+  return [skill.replace(/\s*\([^)]*\)/, ''), alias, skill]
+    .filter((t): t is string => Boolean(t))
+    .map((t) => t.toLowerCase())
+}
+
 export function matchSkills(resume: ResumeData, jobDescription: string) {
   const jd = jobDescription.toLowerCase()
-  const matched = jd ? resume.skills.filter((s) => jd.includes(s.toLowerCase())) : []
-  return (matched.length ? matched : resume.skills).slice(0, 5)
+  const skills = allSkills(resume)
+  const matched = jd ? skills.filter((s) => skillTerms(s).some((t) => jd.includes(t))) : []
+  return (matched.length ? matched : skills).slice(0, 5)
 }
 
 export function generateCoverLetter(resume: ResumeData, input: CoverLetterInput) {
@@ -29,7 +38,7 @@ export function generateCoverLetter(resume: ResumeData, input: CoverLetterInput)
   const role = input.role.trim() || '[Role]'
   const manager = input.hiringManager.trim()
   const skills = list(matchSkills(resume, input.jobDescription))
-  const latest = resume.experience[0]
+  const latest = resume.experience.find((e) => e.points.length > 0)
 
   const greeting = manager ? `Dear ${manager},` : `Dear ${company} Hiring Team,`
   const signOff = input.tone === 'friendly' ? 'Warm regards,' : 'Sincerely,'
@@ -41,13 +50,13 @@ export function generateCoverLetter(resume: ResumeData, input: CoverLetterInput)
   }[input.tone]
 
   const experience = latest
-    ? `In my role as ${latest.role} at ${latest.company}, ${latest.points[0].charAt(0).toLowerCase()}${latest.points[0].slice(1).replace(/\.$/, '')}. ${resume.summary}`
+    ? `In my role as ${latest.role} at ${latest.company}, I ${latest.points[0].charAt(0).toLowerCase()}${latest.points[0].slice(1).replace(/\.$/, '')}.`
     : resume.summary
 
   const projectLine = input.projects.length
     ? `Recent work I'm proud of includes ${list(
         input.projects.map((p) => (p.summary ? `${p.title} (${p.summary.replace(/\.$/, '')})` : p.title))
-      )}. You can see more at ${resume.website ?? 'my portfolio'}.`
+      )}. You can see more at ${resume.website || 'my portfolio'}.`
     : ''
 
   const extra = input.extra.trim()

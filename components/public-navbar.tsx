@@ -14,8 +14,6 @@ const links = [
   { href: '/blog', label: 'Blog' },
   { href: '/projects', label: 'Projects' },
   { href: '/graph', label: 'Graph' },
-  { href: '/resume', label: 'Resume' },
-  { href: '/cover-letter', label: 'Cover Letter' },
 ]
 
 function isActivePath(pathname: string, href: string) {

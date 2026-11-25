@@ -3,7 +3,6 @@ import { cacheLife, cacheTag } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { fetchGitHubReadmeFromRepo, fetchMarkdownFromUrl } from '@/lib/content-import'
 import type { BlogPost, Category, Project, SiteSettings } from '@/lib/cms'
-import { normalizeResume, type ResumeData } from '@/lib/resume'
 
 const blogSelect = '*, blog_post_categories(categories(*))'
 const projectSelect = '*, project_categories(categories(*))'
@@ -146,14 +145,4 @@ export async function getCategories() {
   const { data, error } = await db.from('categories').select('*').order('name')
   if (error) console.warn('categories:', error.message)
   return (data ?? []) as Category[]
-}
-
-export async function getResume(): Promise<ResumeData> {
-  'use cache'
-  cacheTag('content')
-  cacheLife('minutes')
-  const db = createPublicClient()
-  const { data, error } = await db.from('resume').select('data').eq('id', 'default').maybeSingle()
-  if (error) console.warn('resume:', error.message)
-  return normalizeResume(data?.data)
 }
