@@ -1,4 +1,4 @@
-import type { ResumeData } from '@/lib/resume'
+import { boldParts, type ResumeData } from '@/lib/resume'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -14,18 +14,36 @@ function Bullets({ points }: { points: string[] }) {
   return (
     <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13px] leading-snug">
       {points.map((p, i) => (
-        <li key={i}>{p}</li>
+        <li key={i}>
+          {boldParts(p).map((part, x) => (part.bold ? <strong key={x}>{part.text}</strong> : part.text))}
+        </li>
       ))}
     </ul>
   )
 }
 
-function Row({ left, right, sub }: { left: string; right?: string; sub?: string }) {
+// Left: bold title with the place beside it. Right: date, top-right. Below: italic line (role / degree).
+function Row({
+  left,
+  place,
+  right,
+  sub,
+  italicLeft,
+}: {
+  left: string
+  place?: string
+  right?: string
+  sub?: string
+  italicLeft?: boolean
+}) {
   return (
     <div className="break-inside-avoid">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-        <h3 className="text-[13px] font-bold">{left}</h3>
-        {right ? <span className="text-xs">{right}</span> : null}
+      <div className="flex items-baseline justify-between gap-x-4">
+        <h3 className={`text-[13px] ${italicLeft ? 'italic font-semibold' : 'font-bold'}`}>
+          {left}
+          {place ? <span className="font-normal">{` – ${place}`}</span> : null}
+        </h3>
+        {right ? <span className="shrink-0 text-xs">{right}</span> : null}
       </div>
       {sub ? <p className="text-[13px] italic">{sub}</p> : null}
     </div>
@@ -44,7 +62,7 @@ export function ResumeDocument({ data }: { data: ResumeData }) {
     <article className="mx-auto w-full max-w-[210mm] bg-white p-10 text-neutral-900 shadow-sm ring-1 ring-black/5 print:max-w-none print:p-0 print:shadow-none print:ring-0">
       <header className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">{data.name}</h1>
-        <p className="mt-0.5 text-sm">{data.title}</p>
+        {data.title ? <p className="mt-0.5 text-sm font-semibold">{data.title}</p> : null}
         <p className="mt-1.5 text-xs">{contact.join('  |  ')}</p>
         {links.length > 0 && (
           <p className="mt-0.5 text-xs">
@@ -69,20 +87,22 @@ export function ResumeDocument({ data }: { data: ResumeData }) {
       {data.experience.length > 0 && (
         <Section title="Experience">
           {data.experience.map((job, i) => (
-            <div key={i} className="break-inside-avoid">
-              <Row left={job.company} right={job.location} sub={[job.role, job.period].filter(Boolean).join(' | ')} />
-              <Bullets points={job.points} />
-            </div>
-          ))}
-        </Section>
-      )}
-
-      {data.projects.length > 0 && (
-        <Section title="Projects">
-          {data.projects.map((p, i) => (
-            <div key={i} className="break-inside-avoid">
-              <Row left={p.name} right={p.location} sub={p.period} />
-              <Bullets points={p.points} />
+            <div key={i}>
+              <div className="break-inside-avoid">
+                <Row left={job.company} place={job.location} right={job.period} sub={job.role} />
+                <Bullets points={job.points} />
+              </div>
+              {job.projects.map((p, x) => (
+                <div key={x} className="mt-2.5 break-inside-avoid">
+                  <Row left={`Project ${x + 1}: ${p.name}`} place={p.location} right={p.period} italicLeft />
+                  <Bullets points={p.points} />
+                  {p.stack?.length ? (
+                    <p className="mt-1 text-[13px] leading-snug">
+                      <span className="font-bold">Tech stack:</span> {p.stack.join(', ')}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
             </div>
           ))}
         </Section>

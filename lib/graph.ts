@@ -77,6 +77,10 @@ export function buildGraphData(posts: BlogPost[], projects: Project[], categorie
     project.categories?.forEach((category) => addEdge(edges, `project:${project.id}`, `category:${category.id}`, 3, 'category'));
   });
 
+  categories.forEach((category) => {
+    if (category.parent_id) addEdge(edges, `category:${category.id}`, `category:${category.parent_id}`, 2, 'sub category');
+  });
+
   const contentNodes = [
     ...posts.map((post) => ({ id: `blog:${post.id}`, text: `${post.title} ${post.excerpt ?? ''} ${post.content}` })),
     ...projects.map((project) => ({ id: `project:${project.id}`, text: `${project.title} ${project.summary ?? ''} ${project.content}` }))

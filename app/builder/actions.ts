@@ -38,7 +38,7 @@ const source = (fd: FormData): ContentSource => {
 }
 
 function fail(base: string, message: string): never {
-  redirect(`${base}?error=${encodeURIComponent(message)}`)
+  redirect(`${base}${base.includes('?') ? '&' : '?'}error=${encodeURIComponent(message)}`)
 }
 function dbMessage(error: { code?: string; message: string }) {
   return error.code === '23505'
@@ -197,13 +197,22 @@ export async function saveCategory(formData: FormData) {
   const name = str(formData, 'name')
   if (!name) fail('/builder/categories', 'Category name is required.')
   const slug = slugify(str(formData, 'slug') || name)
+  const parent_id = opt(formData, 'parent_id')
+  if (id && parent_id === id) fail('/builder/categories', 'A category cannot be its own parent.')
 
+  const row = {
+    name,
+    slug,
+    parent_id,
+    sort_order: int(formData, 'sort_order', 100),
+    show_on_resume: bool(formData, 'show_on_resume'),
+  }
   const { error } = id
     ? await db
         .from('categories')
-        .update({ name, slug, updated_at: new Date().toISOString() })
+        .update({ ...row, updated_at: new Date().toISOString() })
         .eq('id', id)
-    : await db.from('categories').insert({ name, slug })
+    : await db.from('categories').insert(row)
   if (error) fail('/builder/categories', dbMessage(error))
 
   revalidatePath('/builder', 'layout')
@@ -214,6 +223,40 @@ export async function saveCategory(formData: FormData) {
 export async function deleteCategory(formData: FormData) {
   const db = await requireDb()
   await db.from('categories').delete().eq('id', str(formData, 'id'))
+  revalidatePath('/builder', 'layout')
+  updateTag('content')
+  redirect('/builder/categories')
+}
+
+// Add several sub categories (skills / tech stack) to a group: "Go, Gin, gRPC" or one per line.
+export async function addSubCategories(formData: FormData) {
+  const db = await requireDb()
+  const parent_id = str(formData, 'parent_id')
+  if (!parent_id) fail('/builder/categories', 'Pick a parent category first.')
+
+  const names = [
+    ...new Set(
+      raw(formData, 'names')
+        .split(/[,\n]/)
+        .map((n) => n.trim())
+        .filter(Boolean)
+    ),
+  ]
+  if (!names.length) fail('/builder/categories', 'Enter at least one name.')
+
+  const { data: last } = await db
+    .from('categories')
+    .select('sort_order')
+    .eq('parent_id', parent_id)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const start = (last?.sort_order ?? 0) + 10
+
+  const rows = names.map((name, i) => ({ name, slug: slugify(name.replace(/\+/g, ' plus ').replace(/#/g, ' sharp ')), parent_id, sort_order: start + i * 10 }))
+  const { error } = await db.from('categories').insert(rows)
+  if (error) fail('/builder/categories', dbMessage(error))
+
   revalidatePath('/builder', 'layout')
   updateTag('content')
   redirect('/builder/categories')
@@ -256,25 +299,61 @@ export async function setQueuePosted(formData: FormData) {
 }
 
 // ---------- Resume ----------
+const resumeUrl = (id: string, extra = '') =>
+  `/builder/resume?v=${encodeURIComponent(id)}${extra}`
+
 export async function saveResume(formData: FormData) {
   const db = await requireDb()
+  const id = str(formData, 'resume_id') || 'default'
 
   let parsed: unknown
   try {
     parsed = JSON.parse(raw(formData, 'resume_json'))
   } catch {
-    fail('/builder/resume', 'Could not read the form data. Please try again.')
+    fail(resumeUrl(id), 'Could not read the form data. Please try again.')
   }
 
   const data = normalizeResume(parsed)
-  if (!data.name.trim()) fail('/builder/resume', 'Name is required.')
+  if (!data.name.trim()) fail(resumeUrl(id), 'Name is required.')
+  const label = str(formData, 'label') || (id === 'default' ? 'Default' : 'Untitled version')
 
   const { error } = await db
     .from('resume')
-    .upsert({ id: 'default', data, updated_at: new Date().toISOString() })
-  if (error) fail('/builder/resume', error.message)
+    .upsert({ id, label, data, updated_at: new Date().toISOString() })
+  if (error) fail(resumeUrl(id), error.message)
 
   revalidatePath('/builder', 'layout')
   updateTag('content')
-  redirect('/builder/resume?saved=1')
+  redirect(resumeUrl(id, '&saved=1'))
 }
+
+// New version for a target job, copied from an existing one.
+export async function createResumeVersion(formData: FormData) {
+  const db = await requireDb()
+  const label = str(formData, 'label')
+  if (!label) fail('/builder/resume', 'Give the new version a name, e.g. the target job.')
+
+  const { data: source } = await db
+    .from('resume')
+    .select('data')
+    .eq('id', str(formData, 'source_id') || 'default')
+    .maybeSingle()
+
+  const id = crypto.randomUUID()
+  const { error } = await db.from('resume').insert({ id, label, data: source?.data ?? {} })
+  if (error) fail('/builder/resume', error.message)
+
+  revalidatePath('/builder', 'layout')
+  redirect(resumeUrl(id))
+}
+
+export async function deleteResumeVersion(formData: FormData) {
+  const db = await requireDb()
+  const id = str(formData, 'id')
+  if (!id || id === 'default') fail('/builder/resume', 'The default resume cannot be deleted.')
+  await db.from('resume').delete().eq('id', id)
+
+  revalidatePath('/builder', 'layout')
+  redirect('/builder/resume')
+}
+

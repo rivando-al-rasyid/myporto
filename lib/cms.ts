@@ -5,6 +5,9 @@ export interface Category {
   id: string
   name: string
   slug: string
+  parent_id: string | null
+  sort_order: number
+  show_on_resume: boolean
   created_at: string
   updated_at: string
 }

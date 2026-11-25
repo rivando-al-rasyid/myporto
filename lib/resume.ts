@@ -1,6 +1,24 @@
 // Resume data model, based on the "Template CV - LWA" layout:
 // header, summary, experience, projects, education, skills (parent skill → sub skills).
 
+export interface ResumeProject {
+  name: string
+  location?: string
+  period: string
+  points: string[]
+  // Optional link to a portfolio project; its sub-category tags become the tech stack line.
+  projectId?: string
+  stack?: string[]
+}
+
+// `**keyword**` in a highlight renders bold (the template bolds key terms).
+export function boldParts(text: string): { text: string; bold: boolean }[] {
+  return text
+    .split(/\*\*(.+?)\*\*/g)
+    .map((t, i) => ({ text: t, bold: i % 2 === 1 }))
+    .filter((p) => p.text)
+}
+
 export interface ResumeData {
   name: string
   title: string
@@ -10,29 +28,25 @@ export interface ResumeData {
   website?: string
   links: { label: string; href: string }[]
   summary: string
+  // Work experience; each job can hold its own projects (shown nested under the job, like the CV template).
   experience: {
     company: string
     location?: string
     role: string
     period: string
     points: string[]
-  }[]
-  projects: {
-    name: string
-    location?: string
-    period: string
-    points: string[]
+    projects: ResumeProject[]
   }[]
   education: { school: string; degree: string; period: string }[]
   skillGroups: { category: string; items: string[] }[]
 }
 
 const pushPoints = [
-  'Developed and deployed a push notification service using Golang (Gin) and Firebase Cloud Messaging (FCM), ensuring real-time delivery of promotional content to over 10,000 users.',
-  'Integrated Enterprise Service Bus (ESB) APIs to automate notification relay processes, reducing manual intervention by 90%.',
-  'Implemented JWT-based authentication and OAuth2 for secure API communication and user verification.',
-  'Optimized notification dispatch system for scalability, achieving under 300ms response time on average.',
-  'Collaborated with cross-functional teams to align on delivery timelines, contributing to a 100% on-time feature rollout within the project duration.',
+  'Developed and deployed a **push notification service** using **Golang (Gin)** and **Firebase Cloud Messaging (FCM)**, ensuring real-time delivery of promotional content to over **10,000 users**.',
+  'Integrated **Enterprise Service Bus (ESB)** APIs to automate notification relay processes, reducing manual intervention by **90%**.',
+  'Implemented **JWT-based authentication and OAuth2** for secure API communication and user verification.',
+  'Optimized notification dispatch system for scalability, achieving under **300ms** response time on average.',
+  'Collaborated with cross-functional teams to align on delivery timelines, contributing to a **100% on-time feature rollout** within the project duration.',
 ]
 
 export const defaultResume: ResumeData = {
@@ -52,6 +66,7 @@ export const defaultResume: ResumeData = {
       role: 'Fullstack Web Developer',
       period: 'Jan 2024 – Present',
       points: pushPoints,
+      projects: [],
     },
     {
       company: 'Koda',
@@ -59,6 +74,14 @@ export const defaultResume: ResumeData = {
       role: 'Fullstack Web Developer',
       period: 'Jun 2025 – Jul 2025',
       points: pushPoints,
+      projects: [
+        {
+          name: 'PT ESB Indonesia',
+          location: 'Remote',
+          period: 'Jun 2025 – Jul 2025',
+          points: pushPoints,
+        },
+      ],
     },
     {
       company: 'General Practitioner & Dentist Clinic',
@@ -68,14 +91,7 @@ export const defaultResume: ResumeData = {
       points: [
         'Led the clinic’s digitalization: registered the BPJS system and a SatuSehat account, selected a third-party vendor for the electronic medical record and entered data into the system.',
       ],
-    },
-  ],
-  projects: [
-    {
-      name: 'PT ESB Indonesia',
-      location: 'Remote',
-      period: 'Jun 2025 – Jul 2025',
-      points: pushPoints,
+      projects: [],
     },
   ],
   education: [
@@ -117,6 +133,32 @@ export function normalizeResume(input: unknown): ResumeData {
   const r = input as Record<string, unknown>
   const d = defaultResume
 
+  const toProject = (p: Record<string, unknown>): ResumeProject => ({
+    name: str(p.name),
+    location: str(p.location) || undefined,
+    period: str(p.period),
+    points: strList(p.points),
+    projectId: str(p.projectId) || undefined,
+    stack: strList(p.stack),
+  })
+  const experience = rows(r.experience).map((e) => ({
+    company: str(e.company),
+    location: str(e.location) || undefined,
+    role: str(e.role),
+    period: str(e.period),
+    points: strList(e.points),
+    projects: rows(e.projects).map(toProject),
+  }))
+  // Older saves kept projects in their own top-level list. Nest them under the job with the same
+  // period (or the first job), so nothing is lost.
+  const legacyProjects = rows(r.projects).map(toProject)
+  if (legacyProjects.length && experience.length && !experience.some((e) => e.projects.length)) {
+    for (const p of legacyProjects) {
+      const host = experience.find((e) => e.period && e.period === p.period) ?? experience[0]
+      host.projects.push(p)
+    }
+  }
+
   const groups = rows(r.skillGroups)
     .map((g) => ({ category: str(g.category).trim(), items: strList(g.items) }))
     .filter((g) => g.category && g.items.length)
@@ -134,19 +176,7 @@ export function normalizeResume(input: unknown): ResumeData {
     links: rows(r.links)
       .map((l) => ({ label: str(l.label).trim(), href: str(l.href).trim() }))
       .filter((l) => l.label && l.href),
-    experience: rows(r.experience).map((e) => ({
-      company: str(e.company),
-      location: str(e.location) || undefined,
-      role: str(e.role),
-      period: str(e.period),
-      points: strList(e.points),
-    })),
-    projects: rows(r.projects).map((p) => ({
-      name: str(p.name),
-      location: str(p.location) || undefined,
-      period: str(p.period),
-      points: strList(p.points),
-    })),
+    experience,
     education: rows(r.education).map((e) => ({
       school: str(e.school),
       degree: str(e.degree),

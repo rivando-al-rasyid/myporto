@@ -29,6 +29,25 @@ insert into public.categories (id, name, slug) values
   ('c0000000-0000-4000-8000-000000000005', 'Data Viz',        'data-viz')
 on conflict (slug) do update set name = excluded.name;
 
+-- ---------- Skill groups (top level) and skills (sub categories) ----------
+-- Existing topic categories 'nextjs' and 'supabase' are moved under a group so they double as skills.
+insert into public.categories (id, name, slug, parent_id, sort_order) values
+  ('c1000000-0000-4000-8000-000000000001', 'Frontend Development', 'frontend-development', null, 10),
+  ('c1000000-0000-4000-8000-000000000002', 'Backend Development',  'backend-development',  null, 20),
+  ('c1000000-0000-4000-8000-000000000003', 'Database Management',  'database-management',  null, 30)
+on conflict (slug) do update set name = excluded.name, sort_order = excluded.sort_order;
+
+insert into public.categories (id, name, slug, parent_id, sort_order) values
+  ('c1000000-0000-4000-8000-000000000004', 'React.js',     'react-js',   'c1000000-0000-4000-8000-000000000001', 10),
+  ('c0000000-0000-4000-8000-000000000002', 'Next.js',      'nextjs',     'c1000000-0000-4000-8000-000000000001', 20),
+  ('c1000000-0000-4000-8000-000000000005', 'Tailwind CSS', 'tailwind-css','c1000000-0000-4000-8000-000000000001', 30),
+  ('c1000000-0000-4000-8000-000000000006', 'Go (Golang)',  'go-golang',  'c1000000-0000-4000-8000-000000000002', 10),
+  ('c1000000-0000-4000-8000-000000000007', 'Gin',          'gin',        'c1000000-0000-4000-8000-000000000002', 20),
+  ('c1000000-0000-4000-8000-000000000008', 'PostgreSQL',   'postgresql', 'c1000000-0000-4000-8000-000000000003', 10),
+  ('c0000000-0000-4000-8000-000000000003', 'Supabase',     'supabase',   'c1000000-0000-4000-8000-000000000003', 20)
+on conflict (slug) do update set
+  name = excluded.name, parent_id = excluded.parent_id, sort_order = excluded.sort_order;
+
 -- ---------- Projects ----------
 insert into public.projects
   (id, title, slug, summary, content, content_source, repo_url, demo_url,
@@ -96,7 +115,12 @@ insert into public.project_categories (project_id, category_id) values
   ('a0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002'),
   ('a0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000003'),
   ('a0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000005'),
-  ('a0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000004')
+  ('a0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000004'),
+  -- tech stack (sub categories)
+  ('a0000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000004'),
+  ('a0000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000005'),
+  ('a0000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000004'),
+  ('a0000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000008')
 on conflict do nothing;
 
 insert into public.blog_post_categories (blog_post_id, category_id) values

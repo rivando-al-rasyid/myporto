@@ -17,6 +17,14 @@ export const metadata: Metadata = {
   description:
     'A modern portfolio CMS with blog, projects, graph relations, social sharing, and Supabase admin.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  openGraph: {
+    type: 'website',
+    siteName: 'Portfolio Knowledge Graph',
+    title: 'Portfolio Knowledge Graph',
+    description:
+      'A modern portfolio CMS with blog, projects, graph relations, social sharing, and Supabase admin.',
+  },
+  twitter: { card: 'summary_large_image' },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

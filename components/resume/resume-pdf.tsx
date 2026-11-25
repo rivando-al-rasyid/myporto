@@ -1,6 +1,6 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
-import type { ResumeData } from '@/lib/resume'
+import { boldParts, type ResumeData } from '@/lib/resume'
 
 // Keep words whole instead of breaking them with hyphens.
 Font.registerHyphenationCallback((word) => [word])
@@ -8,7 +8,7 @@ Font.registerHyphenationCallback((word) => [word])
 const s = StyleSheet.create({
   page: { paddingVertical: 36, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 9.5, lineHeight: 1.35, color: '#171717' },
   name: { fontFamily: 'Helvetica-Bold', fontSize: 20, lineHeight: 1.2, textAlign: 'center' },
-  title: { fontSize: 10.5, textAlign: 'center', marginTop: 4 },
+  title: { fontFamily: 'Helvetica-Bold', fontSize: 10.5, textAlign: 'center', marginTop: 4 },
   contact: { fontSize: 8.5, textAlign: 'center', marginTop: 5 },
   link: { color: '#171717', textDecoration: 'underline' },
   section: { marginTop: 14 },
@@ -23,7 +23,8 @@ const s = StyleSheet.create({
     marginBottom: 7,
   },
   block: { marginBottom: 8 },
-  rowHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  rowHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  rowLoc: { fontFamily: 'Helvetica' },
   rowLeft: { fontFamily: 'Helvetica-Bold', fontSize: 9.5, flexShrink: 1 },
   rowRight: { fontSize: 8.5, marginLeft: 12, textAlign: 'right' },
   sub: { fontFamily: 'Helvetica-Oblique' },
@@ -55,11 +56,40 @@ function Bullet({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Row({ left, right, sub }: { left: string; right?: string; sub?: string }) {
+// A highlight with **bold** keywords.
+function Point({ text }: { text: string }) {
+  return (
+    <Bullet>
+      {boldParts(text).map((part, i) => (
+        <Text key={i} style={part.bold ? s.bold : undefined}>
+          {part.text}
+        </Text>
+      ))}
+    </Bullet>
+  )
+}
+
+// Left: bold title with the place beside it. Right: date, top-right. Below: italic line (role / degree).
+function Row({
+  left,
+  place,
+  right,
+  sub,
+  italicLeft,
+}: {
+  left: string
+  place?: string
+  right?: string
+  sub?: string
+  italicLeft?: boolean
+}) {
   return (
     <View minPresenceAhead={40}>
       <View style={s.rowHead}>
-        <Text style={s.rowLeft}>{left}</Text>
+        <Text style={italicLeft ? [s.rowLeft, s.sub] : s.rowLeft}>
+          {left}
+          {place ? <Text style={[s.rowLoc, italicLeft ? s.sub : {}]}>{` – ${place}`}</Text> : null}
+        </Text>
         {right ? <Text style={s.rowRight}>{right}</Text> : null}
       </View>
       {sub ? <Text style={s.sub}>{sub}</Text> : null}
@@ -106,22 +136,22 @@ export function ResumePdf({ data }: { data: ResumeData }) {
           <Section title="Experience">
             {data.experience.map((job, i) => (
               <View key={i} style={s.block}>
-                <Row left={job.company} right={job.location} sub={[job.role, job.period].filter(Boolean).join(' | ')} />
+                <Row left={job.company} place={job.location} right={job.period} sub={job.role} />
                 {job.points.map((p, x) => (
-                  <Bullet key={x}>{p}</Bullet>
+                  <Point key={x} text={p} />
                 ))}
-              </View>
-            ))}
-          </Section>
-        )}
-
-        {data.projects.length > 0 && (
-          <Section title="Projects">
-            {data.projects.map((p, i) => (
-              <View key={i} style={s.block}>
-                <Row left={p.name} right={p.location} sub={p.period} />
-                {p.points.map((pt, x) => (
-                  <Bullet key={x}>{pt}</Bullet>
+                {job.projects.map((p, x) => (
+                  <View key={x} style={{ marginTop: 7 }}>
+                    <Row left={`Project ${x + 1}: ${p.name}`} place={p.location} right={p.period} italicLeft />
+                    {p.points.map((pt, y) => (
+                      <Point key={y} text={pt} />
+                    ))}
+                    {p.stack?.length ? (
+                      <Text style={{ marginTop: 3 }}>
+                        <Text style={s.bold}>Tech stack:</Text> {p.stack.join(', ')}
+                      </Text>
+                    ) : null}
+                  </View>
                 ))}
               </View>
             ))}

@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { saveResume } from '@/app/builder/actions'
@@ -8,6 +9,7 @@ import { Field } from '@/components/cms/fields'
 import { SubmitButton } from '@/components/cms/submit-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { ResumeProjectOption } from '@/lib/resume-data'
 import type { ResumeData } from '@/lib/resume'
 
 // pdf.js only works in the browser, so skip server rendering for the preview.
@@ -16,8 +18,9 @@ const ResumePdfPreview = dynamic(() => import('@/components/resume/resume-pdf-pr
   loading: () => <p className="p-4 text-xs text-muted-foreground">Loading preview…</p>,
 })
 
-type Job = { company: string; location: string; role: string; period: string; points: string }
-type Proj = { name: string; location: string; period: string; points: string }
+type Proj = { name: string; location: string; period: string; points: string; projectId: string }
+type Job = { company: string; location: string; role: string; period: string; points: string; projects: Proj[] }
+const emptyProject: Proj = { name: '', location: '', period: '', points: '', projectId: '' }
 type Group = { category: string; items: string }
 type Edu = ResumeData['education'][number]
 type Link = ResumeData['links'][number]
@@ -40,7 +43,25 @@ function SectionHead({ title, onAdd, addLabel }: { title: string; onAdd: () => v
   )
 }
 
-export function ResumeForm({ initial }: { initial: ResumeData }) {
+export function ResumeForm({
+  initial,
+  preview,
+  dbSkillGroups,
+  projectOptions,
+  versionId,
+  versionLabel,
+}: {
+  // Resume as saved in the resume table (skills here are the manual fallback).
+  initial: ResumeData
+  // Resume with the skills from /builder/skills merged in; this is what the PDF shows.
+  preview: ResumeData
+  dbSkillGroups: ResumeData['skillGroups']
+  projectOptions: ResumeProjectOption[]
+  versionId: string
+  versionLabel: string
+}) {
+  const [label, setLabel] = useState(versionLabel)
+  const skillsFromDb = dbSkillGroups.length > 0
   const [name, setName] = useState(initial.name)
   const [title, setTitle] = useState(initial.title)
   const [email, setEmail] = useState(initial.email)
@@ -50,11 +71,22 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
   const [summary, setSummary] = useState(initial.summary)
   const [links, setLinks] = useState<Link[]>(initial.links)
   const [jobs, setJobs] = useState<Job[]>(
-    initial.experience.map((e) => ({ ...e, location: e.location ?? '', points: e.points.join('\n') }))
+    initial.experience.map((e) => ({
+      company: e.company,
+      location: e.location ?? '',
+      role: e.role,
+      period: e.period,
+      points: e.points.join('\n'),
+      projects: e.projects.map((p) => ({
+        name: p.name,
+        location: p.location ?? '',
+        period: p.period,
+        points: p.points.join('\n'),
+        projectId: p.projectId ?? '',
+      })),
+    }))
   )
-  const [projects, setProjects] = useState<Proj[]>(
-    initial.projects.map((p) => ({ ...p, location: p.location ?? '', points: p.points.join('\n') }))
-  )
+  const setJobProjects = (jobIndex: number, projects: Proj[]) => setJobs(patch(jobs, jobIndex, { projects }))
   const [education, setEducation] = useState<Edu[]>(initial.education)
   const [groups, setGroups] = useState<Group[]>(
     initial.skillGroups.map((g) => ({ category: g.category, items: g.items.join(', ') }))
@@ -71,25 +103,45 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
     website,
     summary,
     links,
-    experience: jobs.map((j) => ({ ...j, points: lines(j.points) })),
-    projects: projects.map((p) => ({ ...p, points: lines(p.points) })),
-    education,
-    skillGroups: groups.map((g) => ({
-      category: g.category,
-      items: g.items.split(',').map((s) => s.trim()).filter(Boolean),
+    experience: jobs.map((j) => ({
+      company: j.company,
+      location: j.location,
+      role: j.role,
+      period: j.period,
+      points: lines(j.points),
+      // `stack` is derived from the linked portfolio project on the server, so only the link is stored.
+      projects: j.projects.map((p) => ({
+        name: p.name,
+        location: p.location,
+        period: p.period,
+        points: lines(p.points),
+        projectId: p.projectId || undefined,
+      })),
     })),
+    education,
+    // When skills come from the database, keep the saved manual list untouched.
+    skillGroups: skillsFromDb
+      ? initial.skillGroups
+      : groups.map((g) => ({
+          category: g.category,
+          items: g.items.split(',').map((s) => s.trim()).filter(Boolean),
+        })),
   }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
     <form action={saveResume} className="grid min-w-0 gap-8">
       <input type="hidden" name="resume_json" value={JSON.stringify(payload)} readOnly />
+      <input type="hidden" name="resume_id" value={versionId} readOnly />
+      <Field label="Version name (e.g. the target job)" htmlFor="r-label">
+        <Input id="r-label" name="label" value={label} onChange={(e) => setLabel(e.target.value)} required />
+      </Field>
 
       <section className="grid gap-4">
         <h3 className="text-sm font-medium">Header</h3>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Full name" htmlFor="r-name"><Input id="r-name" value={name} onChange={(e) => setName(e.target.value)} required /></Field>
-          <Field label="Job title" htmlFor="r-title"><Input id="r-title" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+          <Field label="Job title / target job" htmlFor="r-title"><Input id="r-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Fullstack Web Developer" /></Field>
           <Field label="Mobile" htmlFor="r-phone"><Input id="r-phone" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
           <Field label="Email" htmlFor="r-email"><Input id="r-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
           <Field label="Location" htmlFor="r-location"><Input id="r-location" value={location} onChange={(e) => setLocation(e.target.value)} /></Field>
@@ -113,7 +165,10 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
       </section>
 
       <section className="grid gap-4">
-        <SectionHead title="Experience" addLabel="Add job" onAdd={() => setJobs([...jobs, { company: '', location: '', role: '', period: '', points: '' }])} />
+        <SectionHead title="Experience" addLabel="Add job" onAdd={() => setJobs([...jobs, { company: '', location: '', role: '', period: '', points: '', projects: [] }])} />
+        <p className="text-xs text-muted-foreground">
+          Put projects inside the job they belong to. Wrap key terms in **double asterisks** to make them bold, like the CV template.
+        </p>
         {jobs.map((j, i) => (
           <div key={i} className="grid gap-3 border p-4">
             <div className="grid gap-3 md:grid-cols-2">
@@ -123,22 +178,67 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
               <Input aria-label="Period" placeholder="Jan 2024 – Present" value={j.period} onChange={(e) => setJobs(patch(jobs, i, { period: e.target.value }))} />
             </div>
             <textarea aria-label="Highlights" rows={5} className={areaClass} placeholder="One highlight per line" value={j.points} onChange={(e) => setJobs(patch(jobs, i, { points: e.target.value }))} />
-            <div><Button type="button" variant="ghost" size="sm" onClick={() => setJobs(jobs.filter((_, x) => x !== i))}>Remove job</Button></div>
-          </div>
-        ))}
-      </section>
 
-      <section className="grid gap-4">
-        <SectionHead title="Projects" addLabel="Add project" onAdd={() => setProjects([...projects, { name: '', location: '', period: '', points: '' }])} />
-        {projects.map((p, i) => (
-          <div key={i} className="grid gap-3 border p-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              <Input aria-label="Project / client" placeholder="PT ESB Indonesia" value={p.name} onChange={(e) => setProjects(patch(projects, i, { name: e.target.value }))} />
-              <Input aria-label="Location" placeholder="Remote" value={p.location} onChange={(e) => setProjects(patch(projects, i, { location: e.target.value }))} />
-              <Input aria-label="Period" placeholder="Jun 2025 – Jul 2025" value={p.period} onChange={(e) => setProjects(patch(projects, i, { period: e.target.value }))} />
+            <div className="grid gap-3 border-l pl-4">
+              <SectionHead title={`Projects at ${j.company || 'this job'}`} addLabel="Add blank project" onAdd={() => setJobProjects(i, [...j.projects, emptyProject])} />
+              <select
+                aria-label="Add project from website"
+                className={areaClass}
+                value=""
+                onChange={(e) => {
+                  const o = projectOptions.find((opt) => opt.id === e.target.value)
+                  if (o) setJobProjects(i, [...j.projects, { ...emptyProject, name: o.title, points: o.summary ?? '', projectId: o.id }])
+                }}
+              >
+                <option value="">+ Add from my website projects…</option>
+                {projectOptions.map((o) => (
+                  <option key={o.id} value={o.id}>{o.title}</option>
+                ))}
+              </select>
+              {j.projects.map((p, x) => {
+                const linked = projectOptions.find((o) => o.id === p.projectId)
+                return (
+                  <div key={x} className="grid gap-3 border p-3">
+                    <p className="text-xs font-medium">Project {x + 1}</p>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <Input aria-label="Project / client" placeholder="PT ESB Indonesia" value={p.name} onChange={(e) => setJobProjects(i, patch(j.projects, x, { name: e.target.value }))} />
+                      <Input aria-label="Location" placeholder="Remote" value={p.location} onChange={(e) => setJobProjects(i, patch(j.projects, x, { location: e.target.value }))} />
+                      <Input aria-label="Period" placeholder="Jun 2025 – Jul 2025" value={p.period} onChange={(e) => setJobProjects(i, patch(j.projects, x, { period: e.target.value }))} />
+                    </div>
+                    <select
+                      aria-label="Linked portfolio project"
+                      className={areaClass}
+                      value={p.projectId}
+                      onChange={(e) => {
+                        const o = projectOptions.find((opt) => opt.id === e.target.value)
+                        setJobProjects(
+                          i,
+                          patch(j.projects, x, {
+                            projectId: e.target.value,
+                            ...(o && !p.name.trim() ? { name: o.title } : {}),
+                            ...(o && !p.points.trim() && o.summary ? { points: o.summary } : {}),
+                          })
+                        )
+                      }}
+                    >
+                      <option value="">Not linked to a website project</option>
+                      {projectOptions.map((o) => (
+                        <option key={o.id} value={o.id}>{o.title}</option>
+                      ))}
+                    </select>
+                    {linked ? (
+                      <p className="text-xs text-muted-foreground">
+                        Name and highlights left empty are taken from the website project. Tech stack (sub categories): {linked.stack.join(', ') || 'none tagged yet — tag the project with sub categories'}
+                      </p>
+                    ) : null}
+                    <textarea aria-label="Project highlights" rows={4} className={areaClass} placeholder="One highlight per line" value={p.points} onChange={(e) => setJobProjects(i, patch(j.projects, x, { points: e.target.value }))} />
+                    <div><Button type="button" variant="ghost" size="sm" onClick={() => setJobProjects(i, j.projects.filter((_, y) => y !== x))}>Remove project</Button></div>
+                  </div>
+                )
+              })}
             </div>
-            <textarea aria-label="Highlights" rows={4} className={areaClass} placeholder="One highlight per line" value={p.points} onChange={(e) => setProjects(patch(projects, i, { points: e.target.value }))} />
-            <div><Button type="button" variant="ghost" size="sm" onClick={() => setProjects(projects.filter((_, x) => x !== i))}>Remove project</Button></div>
+
+            <div><Button type="button" variant="ghost" size="sm" onClick={() => setJobs(jobs.filter((_, x) => x !== i))}>Remove job</Button></div>
           </div>
         ))}
       </section>
@@ -155,25 +255,51 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
         ))}
       </section>
 
-      <section className="grid gap-3">
-        <SectionHead title="Skills" addLabel="Add skill group" onAdd={() => setGroups([...groups, { category: '', items: '' }])} />
-        <p className="text-xs text-muted-foreground">Parent skill, then its sub skills separated by commas. Each group is one line on the CV.</p>
-        {groups.map((g, i) => (
-          <div key={i} className="grid gap-2 md:grid-cols-[1fr_2fr_auto]">
-            <Input aria-label="Parent skill" placeholder="Backend Development" value={g.category} onChange={(e) => setGroups(patch(groups, i, { category: e.target.value }))} />
-            <Input aria-label="Sub skills" placeholder="Go (Golang), Microservices, gRPC" value={g.items} onChange={(e) => setGroups(patch(groups, i, { items: e.target.value }))} />
-            <Button type="button" variant="ghost" size="sm" onClick={() => setGroups(groups.filter((_, x) => x !== i))}>Remove</Button>
+      {skillsFromDb ? (
+        <section className="grid gap-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Skills</h3>
+            <Link href="/builder/categories" className="text-xs underline underline-offset-4">
+              Manage categories
+            </Link>
           </div>
-        ))}
-      </section>
+          <p className="text-xs text-muted-foreground">
+            Pulled from Categories: each top-level category is a skill group and its sub categories are the skills.
+            Untick “On resume” on a category to hide it.
+          </p>
+          <dl className="grid gap-2 border p-4 text-xs">
+            {dbSkillGroups.map((g) => (
+              <div key={g.category} className="grid gap-0.5">
+                <dt className="font-medium">{g.category}</dt>
+                <dd className="text-muted-foreground">{g.items.join(', ')}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : (
+        <section className="grid gap-3">
+          <SectionHead title="Skills" addLabel="Add skill group" onAdd={() => setGroups([...groups, { category: '', items: '' }])} />
+          <p className="text-xs text-muted-foreground">
+            No categories with sub categories yet, so this manual list is used. Create groups and skills under{' '}
+            <Link href="/builder/categories" className="underline underline-offset-4">Categories</Link> to manage them there instead.
+          </p>
+          {groups.map((g, i) => (
+            <div key={i} className="grid gap-2 md:grid-cols-[1fr_2fr_auto]">
+              <Input aria-label="Parent skill" placeholder="Backend Development" value={g.category} onChange={(e) => setGroups(patch(groups, i, { category: e.target.value }))} />
+              <Input aria-label="Sub skills" placeholder="Go (Golang), Microservices, gRPC" value={g.items} onChange={(e) => setGroups(patch(groups, i, { items: e.target.value }))} />
+              <Button type="button" variant="ghost" size="sm" onClick={() => setGroups(groups.filter((_, x) => x !== i))}>Remove</Button>
+            </div>
+          ))}
+        </section>
+      )}
 
       <div><SubmitButton>Save resume</SubmitButton></div>
     </form>
 
     <div className="flex min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:self-start">
       <p className="text-xs text-muted-foreground">Preview shows your last saved version. Click Save resume to update it.</p>
-      {/* `initial` is the saved data from the server, so the preview only changes after a save. */}
-      <ResumePdfPreview data={initial} />
+      {/* `preview` is the saved data from the server, so the preview only changes after a save. */}
+      <ResumePdfPreview data={preview} />
     </div>
     </div>
   )

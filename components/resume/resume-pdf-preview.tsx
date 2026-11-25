@@ -88,8 +88,9 @@ function clean(data: ResumeData): ResumeData {
   const r = normalizeResume(data)
   return {
     ...r,
-    experience: r.experience.filter((e) => e.company.trim() || e.role.trim()),
-    projects: r.projects.filter((p) => p.name.trim()),
+    experience: r.experience
+      .filter((e) => e.company.trim() || e.role.trim())
+      .map((e) => ({ ...e, projects: e.projects.filter((p) => p.name.trim()) })),
     education: r.education.filter((e) => e.school.trim() || e.degree.trim()),
   }
 }
@@ -97,13 +98,15 @@ function clean(data: ResumeData): ResumeData {
 export default function ResumePdfPreview({ data }: { data: ResumeData }) {
   const [blob, setBlob] = useState<Blob | null>(null)
   const [numPages, setNumPages] = useState(0)
-  const [busy, setBusy] = useState(true)
+  const [doneKey, setDoneKey] = useState('')
   const [error, setError] = useState('')
   const [width, setWidth] = useState(0)
   const box = useRef<HTMLDivElement>(null)
 
   const cleaned = clean(data)
   const key = hash(JSON.stringify(cleaned))
+  // Busy until the PDF for the current content has been built (derived, so no setState in the effect body).
+  const busy = doneKey !== key
 
   // Track the available width so the pages scale with the column.
   useEffect(() => {
@@ -118,7 +121,6 @@ export default function ResumePdfPreview({ data }: { data: ResumeData }) {
   // otherwise the PDF is built right away and then cached.
   useEffect(() => {
     let stale = false
-    setBusy(true)
     ;(async () => {
       try {
         let next = readCache(key)
@@ -132,7 +134,7 @@ export default function ResumePdfPreview({ data }: { data: ResumeData }) {
       } catch (e) {
         if (!stale) setError(e instanceof Error ? e.message : 'Could not generate the PDF.')
       } finally {
-        if (!stale) setBusy(false)
+        if (!stale) setDoneKey(key)
       }
     })()
     return () => {
