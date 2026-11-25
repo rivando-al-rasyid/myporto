@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useState } from 'react'
 
 import { saveResume } from '@/app/builder/actions'
@@ -8,6 +9,12 @@ import { SubmitButton } from '@/components/cms/submit-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { ResumeData } from '@/lib/resume'
+
+// pdf.js only works in the browser, so skip server rendering for the preview.
+const ResumePdfPreview = dynamic(() => import('@/components/resume/resume-pdf-preview'), {
+  ssr: false,
+  loading: () => <p className="p-4 text-xs text-muted-foreground">Loading preview…</p>,
+})
 
 type Job = { company: string; location: string; role: string; period: string; points: string }
 type Proj = { name: string; location: string; period: string; points: string }
@@ -74,7 +81,8 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
   }
 
   return (
-    <form action={saveResume} className="grid max-w-3xl gap-8">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+    <form action={saveResume} className="grid min-w-0 gap-8">
       <input type="hidden" name="resume_json" value={JSON.stringify(payload)} readOnly />
 
       <section className="grid gap-4">
@@ -161,5 +169,10 @@ export function ResumeForm({ initial }: { initial: ResumeData }) {
 
       <div><SubmitButton>Save resume</SubmitButton></div>
     </form>
+
+    <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+      <ResumePdfPreview data={payload} />
+    </div>
+    </div>
   )
 }
