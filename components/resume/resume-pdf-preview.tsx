@@ -12,6 +12,7 @@ import { normalizeResume, type ResumeData } from '@/lib/resume'
 // Must be set in the same module that renders <Document>/<Page>.
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
+
 // The form can hold half-filled rows; drop them so the PDF has no empty entries.
 function clean(data: ResumeData): ResumeData {
   const r = normalizeResume(data)
@@ -23,13 +24,81 @@ function clean(data: ResumeData): ResumeData {
   }
 }
 
-export default function ResumePdfPreview({ data }: { data: ResumeData }) {
-  const [blob, setBlob] = useState<Blob | null>(null)
+/**
+ * One buffer of the preview. A new PDF is rendered in the hidden buffer first;
+ * it is only shown once every page has painted, so the visible preview never
+ * goes blank while it updates.
+ */
+function PdfPages({
+  blob,
+  width,
+  visible,
+  onReady,
+  onError,
+}: {
+  blob: Blob | null
+  width: number
+  visible: boolean
+  onReady: (blob: Blob, pages: number) => void
+  onError: (message: string) => void
+}) {
   const [numPages, setNumPages] = useState(0)
+  const painted = useRef(0)
+
+  // A new file starts a new paint count.
+  useEffect(() => {
+    painted.current = 0
+    setNumPages(0)
+  }, [blob])
+
+  if (!blob) return null
+
+  return (
+    <div
+      aria-hidden={!visible}
+      className={visible ? undefined : 'pointer-events-none invisible fixed top-0 left-0 -z-10'}
+      style={visible ? undefined : { width }}
+    >
+      <Document
+        file={blob}
+        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+        onLoadError={(e) => onError(e.message)}
+        loading={null}
+        className="flex flex-col gap-3"
+      >
+        {Array.from({ length: numPages }, (_, i) => (
+          <Page
+            key={i}
+            pageNumber={i + 1}
+            width={width}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            className="shadow-sm ring-1 ring-black/5"
+            onRenderSuccess={() => {
+              painted.current += 1
+              if (painted.current === numPages) onReady(blob, numPages)
+            }}
+          />
+        ))}
+      </Document>
+    </div>
+  )
+}
+
+export default function ResumePdfPreview({ data }: { data: ResumeData }) {
+  const [slots, setSlots] = useState<[Blob | null, Blob | null]>([null, null])
+  const [active, setActive] = useState<0 | 1>(0)
+  const [shown, setShown] = useState(false) // true once the first PDF has painted
+  const [pages, setPages] = useState(0)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
   const [width, setWidth] = useState(0)
+
   const box = useRef<HTMLDivElement>(null)
+  const slotsRef = useRef(slots)
+  const activeRef = useRef<0 | 1>(0)
+  const lastKey = useRef('')
+  const latestBlob = useRef<Blob | null>(null)
 
   // Track the available width so the pages scale with the column.
   useEffect(() => {
@@ -40,23 +109,35 @@ export default function ResumePdfPreview({ data }: { data: ResumeData }) {
     return () => ro.disconnect()
   }, [])
 
-  // Re-generate the PDF shortly after the form stops changing.
+  // Rebuild the PDF only after typing pauses, and only if the content really changed.
   const key = JSON.stringify(data)
   useEffect(() => {
+    if (key === lastKey.current) {
+      setBusy(false)
+      return
+    }
     let stale = false
     setBusy(true)
     const timer = window.setTimeout(async () => {
       try {
         const next = await pdf(<ResumePdf data={clean(data)} /> as ReactElement<DocumentProps>).toBlob()
         if (stale) return
-        setBlob(next)
+        lastKey.current = key
+        latestBlob.current = next
+        // Put the new file in the buffer that is NOT on screen.
+        const target: 0 | 1 = slotsRef.current[activeRef.current] ? (activeRef.current === 0 ? 1 : 0) : activeRef.current
+        const updated: [Blob | null, Blob | null] = [...slotsRef.current]
+        updated[target] = next
+        slotsRef.current = updated
+        setSlots(updated)
         setError('')
       } catch (e) {
-        if (!stale) setError(e instanceof Error ? e.message : 'Could not generate the PDF.')
-      } finally {
-        if (!stale) setBusy(false)
+        if (!stale) {
+          setError(e instanceof Error ? e.message : 'Could not generate the PDF.')
+          setBusy(false)
+        }
       }
-    }, 600)
+    }, DEBOUNCE_MS)
     return () => {
       stale = true
       window.clearTimeout(timer)
@@ -65,7 +146,18 @@ export default function ResumePdfPreview({ data }: { data: ResumeData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
 
+  function handleReady(index: 0 | 1, blob: Blob, count: number) {
+    // Ignore a buffer that has already been replaced by a newer file.
+    if (slotsRef.current[index] !== blob) return
+    activeRef.current = index
+    setActive(index)
+    setShown(true)
+    setPages(count)
+    if (latestBlob.current === blob) setBusy(false)
+  }
+
   function download() {
+    const blob = latestBlob.current
     if (!blob) return
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -75,14 +167,16 @@ export default function ResumePdfPreview({ data }: { data: ResumeData }) {
     URL.revokeObjectURL(url)
   }
 
+  const pageWidth = Math.max(width, 200)
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={download} disabled={!blob}>
+        <Button type="button" variant="outline" size="sm" onClick={download} disabled={!shown}>
           Download PDF
         </Button>
         <span className="text-xs text-muted-foreground" aria-live="polite">
-          {error ? '' : busy ? 'Updating preview…' : numPages ? `${numPages} page${numPages > 1 ? 's' : ''}` : ''}
+          {error ? '' : busy ? 'Updating…' : pages ? `${pages} page${pages > 1 ? 's' : ''}` : ''}
         </span>
       </div>
 
@@ -91,28 +185,19 @@ export default function ResumePdfPreview({ data }: { data: ResumeData }) {
           <p role="alert" className="text-xs text-destructive">
             {error}
           </p>
-        ) : blob && width > 0 ? (
-          <Document
-            file={blob}
-            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-            onLoadError={(e) => setError(e.message)}
-            loading={<p className="p-4 text-xs text-muted-foreground">Loading preview…</p>}
-            className="flex flex-col gap-3"
-          >
-            {Array.from({ length: numPages }, (_, i) => (
-              <Page
-                key={i}
-                pageNumber={i + 1}
-                width={Math.max(width - 24, 200)}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                className="shadow-sm ring-1 ring-black/5"
-              />
-            ))}
-          </Document>
-        ) : (
-          <p className="p-4 text-xs text-muted-foreground">Generating preview…</p>
-        )}
+        ) : null}
+        {!shown && !error ? <p className="p-4 text-xs text-muted-foreground">Generating preview…</p> : null}
+        {width > 0 &&
+          ([0, 1] as const).map((i) => (
+            <PdfPages
+              key={i}
+              blob={slots[i]}
+              width={pageWidth}
+              visible={active === i}
+              onReady={(blob, count) => handleReady(i, blob, count)}
+              onError={setError}
+            />
+          ))}
       </div>
     </div>
   )

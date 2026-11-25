@@ -1,9 +1,6 @@
-import Link from 'next/link'
-
 import { FormError } from '@/components/cms/fields'
 import { PageBody, PageHeader } from '@/components/cms/page-header'
 import { ResumeForm } from '@/components/cms/resume-form'
-import { buttonVariants } from '@/components/ui/button'
 import { normalizeResume } from '@/lib/resume'
 import { createClient } from '@/lib/supabase/server'
 
@@ -20,12 +17,7 @@ export default async function ResumePage({
     <PageBody>
       <PageHeader
         title="Resume"
-        description="Powers the public /resume page, the PDF download and the cover letter generator."
-        actions={
-          <Link href="/resume" target="_blank" className={buttonVariants({ size: 'sm', variant: 'outline' })}>
-            View public page
-          </Link>
-        }
+        description="Edit your resume on the left and preview the PDF on the right. It also powers the cover letter generator."
       />
       <FormError message={error} />
       {saved ? <p className="text-xs text-muted-foreground">Saved.</p> : null}
