@@ -38,15 +38,9 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    // the OAuth consent route sends unauthenticated visitors to the login page
-    // itself, so that it can preserve the authorization in the `next` parameter
-    request.nextUrl.pathname !== '/oauth/consent'
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Only the CMS needs a session. The public portfolio (/, /blog, /projects, /graph, ...) must stay
+  // reachable for visitors; this proxy still runs everywhere so the session cookie keeps refreshing.
+  if (!user && request.nextUrl.pathname.startsWith('/builder')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
