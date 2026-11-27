@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { Geist, Geist_Mono, Inter } from 'next/font/google'
 
 import { PublicNavbar } from '@/components/public-navbar'
@@ -38,7 +38,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body>
         <Providers>
-          <PublicNavbar />
+          <Suspense fallback={null}>
+            <PublicNavbar />
+          </Suspense>
           {children}
         </Providers>
       </body>
