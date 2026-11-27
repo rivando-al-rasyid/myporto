@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 const links = [
   { href: '/', label: 'Home' },
   { href: '/blog', label: 'Blog' },
-  { href: '/projects', label: 'Projects' },
+  { href: '/projects', label: 'GitHub' },
   { href: '/graph', label: 'Graph' },
 ]
 

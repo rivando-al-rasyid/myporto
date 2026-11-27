@@ -4,37 +4,30 @@ import { ArrowUpRight01Icon } from '@hugeicons/core-free-icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDate, type BlogPost, type Project } from '@/lib/cms'
+import { formatDate, type BlogPost } from '@/lib/cms'
 import { cn, truncateText } from '@/lib/utils'
 
-interface ContentCardProps {
-  item: BlogPost | Project
-  type: 'blog' | 'project'
-}
-
-export function ContentCard({ item, type }: ContentCardProps) {
-  const description = 'excerpt' in item ? item.excerpt : item.summary
-  const imageUrl = 'cover_image' in item ? item.cover_image : item.image_url
-  const href = type === 'blog' ? `/blog/${item.slug}` : `/projects/${item.slug}`
+export function ContentCard({ item }: { item: BlogPost }) {
+  const href = `/blog/${item.slug}`
 
   return (
-    <Card className={cn('group h-full transition hover:-translate-y-1 hover:shadow-md', imageUrl && 'pt-0')}>
-      {imageUrl ? (
+    <Card className={cn('group h-full transition hover:-translate-y-1 hover:shadow-md', item.cover_image && 'pt-0')}>
+      {item.cover_image ? (
         <Link href={href} className="block overflow-hidden border-b bg-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={imageUrl}
+            src={item.cover_image}
             alt={item.title}
             loading="lazy"
             className="h-48 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           />
         </Link>
       ) : null}
-      <CardHeader className={cn(imageUrl && 'pt-(--card-spacing)')}>
+      <CardHeader className={cn(item.cover_image && 'pt-(--card-spacing)')}>
         <div className="mb-2 flex items-center justify-between gap-2">
-          <Badge variant={type === 'blog' ? 'default' : 'secondary'}>{type}</Badge>
+          <Badge variant="default">blog</Badge>
           <span className="text-xs text-muted-foreground">
-            {formatDate('published_at' in item ? item.published_at : item.updated_at)}
+            {formatDate(item.published_at)}
           </span>
         </div>
         <CardTitle className="text-base leading-tight">
@@ -42,7 +35,7 @@ export function ContentCard({ item, type }: ContentCardProps) {
             {item.title}
           </Link>
         </CardTitle>
-        <CardDescription>{truncateText(description, 140)}</CardDescription>
+        <CardDescription>{truncateText(item.excerpt, 140)}</CardDescription>
       </CardHeader>
       <CardContent className="mt-auto">
         <div className="mb-4 flex flex-wrap gap-2">

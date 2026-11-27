@@ -7,7 +7,6 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 
 const titles: Record<string, string> = {
   dashboard: "Dashboard",
-  projects: "Projects",
   blog: "Blog",
   categories: "Categories",
   resume: "Resume",

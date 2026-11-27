@@ -17,7 +17,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   DashboardSquare01Icon,
-  Folder01Icon,
   File01Icon,
   Menu01Icon,
   Settings05Icon,
@@ -28,7 +27,6 @@ import {
 
 const navMain = [
   { title: "Dashboard", url: "/builder/dashboard", icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} /> },
-  { title: "Projects", url: "/builder/projects", icon: <HugeiconsIcon icon={Folder01Icon} strokeWidth={2} /> },
   { title: "Blog", url: "/builder/blog", icon: <HugeiconsIcon icon={File01Icon} strokeWidth={2} /> },
   { title: "Categories", url: "/builder/categories", icon: <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} /> },
   { title: "Resume", url: "/builder/resume", icon: <HugeiconsIcon icon={UserIcon} strokeWidth={2} /> },

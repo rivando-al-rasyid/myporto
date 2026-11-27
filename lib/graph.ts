@@ -1,6 +1,6 @@
-import type { BlogPost, Category, Project } from '@/lib/cms';
+import type { BlogPost, Category } from '@/lib/cms';
 
-export type GraphNodeType = 'blog' | 'project' | 'category';
+export type GraphNodeType = 'blog' | 'category';
 
 export interface GraphNode {
   id: string;
@@ -44,7 +44,7 @@ function addEdge(edges: Map<string, GraphEdge>, source: string, target: string, 
   edges.set(key, { source, target, weight, reason });
 }
 
-export function buildGraphData(posts: BlogPost[], projects: Project[], categories: Category[]): GraphData {
+export function buildGraphData(posts: BlogPost[], categories: Category[]): GraphData {
   const nodes: GraphNode[] = [
     ...posts.map((post) => ({
       id: `blog:${post.id}`,
@@ -52,13 +52,6 @@ export function buildGraphData(posts: BlogPost[], projects: Project[], categorie
       label: post.title,
       slug: post.slug,
       description: post.excerpt
-    })),
-    ...projects.map((project) => ({
-      id: `project:${project.id}`,
-      type: 'project' as const,
-      label: project.title,
-      slug: project.slug,
-      description: project.summary
     })),
     ...categories.map((category) => ({
       id: `category:${category.id}`,
@@ -73,18 +66,15 @@ export function buildGraphData(posts: BlogPost[], projects: Project[], categorie
   posts.forEach((post) => {
     post.categories?.forEach((category) => addEdge(edges, `blog:${post.id}`, `category:${category.id}`, 3, 'category'));
   });
-  projects.forEach((project) => {
-    project.categories?.forEach((category) => addEdge(edges, `project:${project.id}`, `category:${category.id}`, 3, 'category'));
-  });
 
   categories.forEach((category) => {
     if (category.parent_id) addEdge(edges, `category:${category.id}`, `category:${category.parent_id}`, 2, 'sub category');
   });
 
-  const contentNodes = [
-    ...posts.map((post) => ({ id: `blog:${post.id}`, text: `${post.title} ${post.excerpt ?? ''} ${post.content}` })),
-    ...projects.map((project) => ({ id: `project:${project.id}`, text: `${project.title} ${project.summary ?? ''} ${project.content}` }))
-  ];
+  const contentNodes = posts.map((post) => ({
+    id: `blog:${post.id}`,
+    text: `${post.title} ${post.excerpt ?? ''} ${post.content}`
+  }));
 
   for (let i = 0; i < contentNodes.length; i += 1) {
     for (let j = i + 1; j < contentNodes.length; j += 1) {

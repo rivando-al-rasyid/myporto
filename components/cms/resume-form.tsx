@@ -9,7 +9,6 @@ import { Field } from '@/components/cms/fields'
 import { SubmitButton } from '@/components/cms/submit-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ResumeProjectOption } from '@/lib/resume-data'
 import type { ResumeData } from '@/lib/resume'
 
 // pdf.js only works in the browser, so skip server rendering for the preview.
@@ -18,9 +17,9 @@ const ResumePdfPreview = dynamic(() => import('@/components/resume/resume-pdf-pr
   loading: () => <p className="p-4 text-xs text-muted-foreground">Loading preview…</p>,
 })
 
-type Proj = { name: string; location: string; period: string; points: string; projectId: string }
+type Proj = { name: string; location: string; period: string; points: string }
 type Job = { company: string; location: string; role: string; period: string; points: string; projects: Proj[] }
-const emptyProject: Proj = { name: '', location: '', period: '', points: '', projectId: '' }
+const emptyProject: Proj = { name: '', location: '', period: '', points: '' }
 type Group = { category: string; items: string }
 type Edu = ResumeData['education'][number]
 type Link = ResumeData['links'][number]
@@ -47,7 +46,6 @@ export function ResumeForm({
   initial,
   preview,
   dbSkillGroups,
-  projectOptions,
   versionId,
   versionLabel,
 }: {
@@ -56,7 +54,6 @@ export function ResumeForm({
   // Resume with the skills from /builder/skills merged in; this is what the PDF shows.
   preview: ResumeData
   dbSkillGroups: ResumeData['skillGroups']
-  projectOptions: ResumeProjectOption[]
   versionId: string
   versionLabel: string
 }) {
@@ -82,7 +79,6 @@ export function ResumeForm({
         location: p.location ?? '',
         period: p.period,
         points: p.points.join('\n'),
-        projectId: p.projectId ?? '',
       })),
     }))
   )
@@ -109,13 +105,11 @@ export function ResumeForm({
       role: j.role,
       period: j.period,
       points: lines(j.points),
-      // `stack` is derived from the linked portfolio project on the server, so only the link is stored.
       projects: j.projects.map((p) => ({
         name: p.name,
         location: p.location,
         period: p.period,
         points: lines(p.points),
-        projectId: p.projectId || undefined,
       })),
     })),
     education,
@@ -181,22 +175,7 @@ export function ResumeForm({
 
             <div className="grid gap-3 border-l pl-4">
               <SectionHead title={`Projects at ${j.company || 'this job'}`} addLabel="Add blank project" onAdd={() => setJobProjects(i, [...j.projects, emptyProject])} />
-              <select
-                aria-label="Add project from website"
-                className={areaClass}
-                value=""
-                onChange={(e) => {
-                  const o = projectOptions.find((opt) => opt.id === e.target.value)
-                  if (o) setJobProjects(i, [...j.projects, { ...emptyProject, name: o.title, points: o.summary ?? '', projectId: o.id }])
-                }}
-              >
-                <option value="">+ Add from my website projects…</option>
-                {projectOptions.map((o) => (
-                  <option key={o.id} value={o.id}>{o.title}</option>
-                ))}
-              </select>
               {j.projects.map((p, x) => {
-                const linked = projectOptions.find((o) => o.id === p.projectId)
                 return (
                   <div key={x} className="grid gap-3 border p-3">
                     <p className="text-xs font-medium">Project {x + 1}</p>
@@ -205,32 +184,6 @@ export function ResumeForm({
                       <Input aria-label="Location" placeholder="Remote" value={p.location} onChange={(e) => setJobProjects(i, patch(j.projects, x, { location: e.target.value }))} />
                       <Input aria-label="Period" placeholder="Jun 2025 – Jul 2025" value={p.period} onChange={(e) => setJobProjects(i, patch(j.projects, x, { period: e.target.value }))} />
                     </div>
-                    <select
-                      aria-label="Linked portfolio project"
-                      className={areaClass}
-                      value={p.projectId}
-                      onChange={(e) => {
-                        const o = projectOptions.find((opt) => opt.id === e.target.value)
-                        setJobProjects(
-                          i,
-                          patch(j.projects, x, {
-                            projectId: e.target.value,
-                            ...(o && !p.name.trim() ? { name: o.title } : {}),
-                            ...(o && !p.points.trim() && o.summary ? { points: o.summary } : {}),
-                          })
-                        )
-                      }}
-                    >
-                      <option value="">Not linked to a website project</option>
-                      {projectOptions.map((o) => (
-                        <option key={o.id} value={o.id}>{o.title}</option>
-                      ))}
-                    </select>
-                    {linked ? (
-                      <p className="text-xs text-muted-foreground">
-                        Name and highlights left empty are taken from the website project. Tech stack (sub categories): {linked.stack.join(', ') || 'none tagged yet — tag the project with sub categories'}
-                      </p>
-                    ) : null}
                     <textarea aria-label="Project highlights" rows={4} className={areaClass} placeholder="One highlight per line" value={p.points} onChange={(e) => setJobProjects(i, patch(j.projects, x, { points: e.target.value }))} />
                     <div><Button type="button" variant="ghost" size="sm" onClick={() => setJobProjects(i, j.projects.filter((_, y) => y !== x))}>Remove project</Button></div>
                   </div>

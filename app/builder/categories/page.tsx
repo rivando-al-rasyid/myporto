@@ -29,7 +29,7 @@ function CategoryRow({ c, categories, sub }: { c: Category; categories: Category
       <DeleteButton
         action={deleteCategory}
         id={c.id}
-        confirmText={`Delete “${c.name}”? It is removed from all projects and posts, and its sub categories become top-level.`}
+        confirmText={`Delete “${c.name}”? It is removed from all posts, and its sub categories become top-level.`}
       />
     </div>
   )
@@ -50,7 +50,7 @@ export default async function CategoriesPage({
     <PageBody>
       <PageHeader
         title="Categories"
-        description="A category is a skill group; its sub categories are the skills. Tag projects and posts with sub categories to record their tech stack. “On resume” controls what appears in the resume Skills section."
+        description="A category is a skill group; its sub categories are the skills. Tag posts with sub categories to record their tech stack. “On resume” controls what appears in the resume Skills section."
       />
       <FormError message={error} />
 

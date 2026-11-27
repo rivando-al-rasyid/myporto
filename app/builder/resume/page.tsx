@@ -17,7 +17,7 @@ export default async function ResumePage({
 }) {
   const { error, saved, v } = await searchParams
   const db = await createClient()
-  const [{ versionId, label, manual, resume, dbGroups, projectOptions }, versions] = await Promise.all([
+  const [{ versionId, label, manual, resume, dbGroups }, versions] = await Promise.all([
     loadResume(db, v || undefined),
     listResumeVersions(db),
   ])
@@ -57,7 +57,6 @@ export default async function ResumePage({
         initial={manual}
         preview={resume}
         dbSkillGroups={dbGroups}
-        projectOptions={projectOptions}
         versionId={versionId}
         versionLabel={label}
       />

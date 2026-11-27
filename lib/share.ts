@@ -18,7 +18,7 @@ export function buildShareUrl(platform: SharePlatform, url: string, title: strin
 
 // Browser-side insert into share_events (same table as the old portfolio).
 export async function trackShareEvent(input: {
-  entityType: 'blog' | 'project'
+  entityType: 'blog'
   entityId: string
   platform: string
   url: string

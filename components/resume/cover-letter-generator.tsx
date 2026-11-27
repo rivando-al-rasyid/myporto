@@ -9,18 +9,14 @@ import { Label } from '@/components/ui/label'
 import { generateCoverLetter, type LetterTone } from '@/lib/cover-letter'
 import type { ResumeData } from '@/lib/resume'
 
-type ProjectOption = { id: string; title: string; summary: string | null }
-
 const fieldClass =
   'w-full border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
 
 export function CoverLetterGenerator({
   resume,
-  projects,
   showPdf = true,
 }: {
   resume: ResumeData
-  projects: ProjectOption[]
   showPdf?: boolean
 }) {
   const [company, setCompany] = useState('')
@@ -29,11 +25,7 @@ export function CoverLetterGenerator({
   const [jobDescription, setJobDescription] = useState('')
   const [extra, setExtra] = useState('')
   const [tone, setTone] = useState<LetterTone>('professional')
-  const [selected, setSelected] = useState<string[]>([])
   const [letter, setLetter] = useState('')
-
-  const toggle = (id: string) =>
-    setSelected((cur) => (cur.includes(id) ? cur.filter((i) => i !== id) : [...cur, id]))
 
   function generate() {
     if (!company.trim() || !role.trim()) {
@@ -48,7 +40,6 @@ export function CoverLetterGenerator({
         jobDescription,
         tone,
         extra,
-        projects: projects.filter((p) => selected.includes(p.id)),
         today: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
       })
     )
@@ -112,18 +103,6 @@ export function CoverLetterGenerator({
             placeholder="Paste it here and I'll highlight the skills that match."
           />
         </div>
-
-        {projects.length > 0 && (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium">Mention projects</legend>
-            {projects.map((p) => (
-              <label key={p.id} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggle(p.id)} />
-                {p.title}
-              </label>
-            ))}
-          </fieldset>
-        )}
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="extra">Extra paragraph (optional)</Label>

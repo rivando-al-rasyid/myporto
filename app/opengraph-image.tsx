@@ -10,7 +10,7 @@ export const contentType = 'image/png'
 export default async function Image() {
   const settings = await getSiteSettings()
   const name = settings?.site_name || 'Portfolio'
-  const tagline = settings?.hero_title || 'Projects, articles and the connections between them'
+  const tagline = settings?.hero_title || 'Articles and open source work'
 
   return new ImageResponse(
     (

@@ -1,7 +1,7 @@
 -- Categories + sub categories.
 --   Top-level category  = skill group on the resume (e.g. "Backend Development")
 --   Sub category        = a skill / tech stack item inside that group (e.g. "Go (Golang)")
--- Projects and blog posts are tagged with categories as before; tagging a project with
+-- Blog posts are tagged with categories as before; tagging a post with
 -- sub categories is how its tech stack is recorded.
 
 -- Clean up the earlier draft of this migration if it was applied (skills are sub categories now).
@@ -39,7 +39,7 @@ create trigger enforce_category_depth before insert or update of parent_id on pu
 
 -- ---------- One-time import of skills stored inside resume.data ----------
 -- data->'skillGroups' ([{category, items[]}]) becomes group categories with sub categories.
--- An existing category with the same slug is reused (so existing project/post tags keep working);
+-- An existing category with the same slug is reused (so existing post tags keep working);
 -- it is moved under the group only if it is currently top-level and has no sub categories of its own.
 -- Runs only while no sub categories exist, so re-running never duplicates anything.
 do $$

@@ -146,11 +146,6 @@ export function ResumePdf({ data }: { data: ResumeData }) {
                     {p.points.map((pt, y) => (
                       <Point key={y} text={pt} />
                     ))}
-                    {p.stack?.length ? (
-                      <Text style={{ marginTop: 3 }}>
-                        <Text style={s.bold}>Tech stack:</Text> {p.stack.join(', ')}
-                      </Text>
-                    ) : null}
                   </View>
                 ))}
               </View>

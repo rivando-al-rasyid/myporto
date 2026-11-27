@@ -16,14 +16,14 @@ export const metadata: Metadata = {
     template: '%s | Portfolio Knowledge Graph',
   },
   description:
-    'A modern portfolio CMS with blog, projects, graph relations, social sharing, and Supabase admin.',
+    'A modern portfolio CMS with blog, GitHub repositories, graph relations, and Supabase admin.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   openGraph: {
     type: 'website',
     siteName: 'Portfolio Knowledge Graph',
     title: 'Portfolio Knowledge Graph',
     description:
-      'A modern portfolio CMS with blog, projects, graph relations, social sharing, and Supabase admin.',
+      'A modern portfolio CMS with blog, GitHub repositories, graph relations, and Supabase admin.',
   },
   twitter: { card: 'summary_large_image' },
 }

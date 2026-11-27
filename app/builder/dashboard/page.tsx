@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatDate } from '@/lib/cms'
 import { createClient } from '@/lib/supabase/server'
 
-type Recent = { id: string; title: string; status: string; updated_at: string; kind: 'Project' | 'Blog'; href: string }
+type Recent = { id: string; title: string; status: string; updated_at: string; kind: 'Blog'; href: string }
 
 export default async function DashboardPage() {
   const db = await createClient()
@@ -17,28 +17,19 @@ export default async function DashboardPage() {
     return where ? q.eq(where.column, where.value) : q
   }
 
-  const [projects, projectsLive, posts, postsLive, categories, recentProjects, recentPosts] =
+  const [posts, postsLive, categories, recentPosts] =
     await Promise.all([
-      count('projects'),
-      count('projects', { column: 'status', value: 'published' }),
       count('blog_posts'),
       count('blog_posts', { column: 'status', value: 'published' }),
       count('categories'),
-      db.from('projects').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
-      db.from('blog_posts').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
+      db.from('blog_posts').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(8),
     ])
 
-  const recent: Recent[] = [
-    ...(recentProjects.data ?? []).map((r) => ({ ...r, kind: 'Project' as const, href: `/builder/projects/${r.id}` })),
-    ...(recentPosts.data ?? []).map((r) => ({ ...r, kind: 'Blog' as const, href: `/builder/blog/${r.id}` })),
-  ]
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, 8)
+  const recent: Recent[] = (recentPosts.data ?? []).map((r) => ({ ...r, kind: 'Blog' as const, href: `/builder/blog/${r.id}` }))
 
   const stats = [
-    { label: 'Projects', value: projectsLive.count ?? 0, note: `${projects.count ?? 0} total, published / all` , href: '/builder/projects' },
     { label: 'Blog posts', value: postsLive.count ?? 0, note: `${posts.count ?? 0} total, published / all`, href: '/builder/blog' },
-    { label: 'Categories', value: categories.count ?? 0, note: 'Shared by projects and posts', href: '/builder/categories' },
+    { label: 'Categories', value: categories.count ?? 0, note: 'Shared by posts', href: '/builder/categories' },
   ]
 
   return (
@@ -48,13 +39,12 @@ export default async function DashboardPage() {
         description="Content on your public portfolio, straight from Supabase."
         actions={
           <div className="flex gap-2">
-            <Link href="/builder/projects/new" className={buttonVariants({ size: 'sm' })}>New project</Link>
-            <Link href="/builder/blog/new" className={buttonVariants({ size: 'sm', variant: 'outline' })}>New post</Link>
+            <Link href="/builder/blog/new" className={buttonVariants({ size: 'sm' })}>New post</Link>
           </div>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>
             <Card className="h-full transition-colors hover:bg-muted/40">
@@ -81,7 +71,7 @@ export default async function DashboardPage() {
         <TableBody>
           {recent.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-muted-foreground">Nothing yet. Create your first project or post.</TableCell>
+              <TableCell colSpan={4} className="text-muted-foreground">Nothing yet. Create your first post.</TableCell>
             </TableRow>
           ) : (
             recent.map((r) => (

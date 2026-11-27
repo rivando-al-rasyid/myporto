@@ -5,30 +5,23 @@ import { ArrowRight01Icon, NetworkIcon } from '@hugeicons/core-free-icons'
 import { ContentCard } from '@/components/content-card'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { BlogPost, Category, Project, SiteSettings } from '@/lib/cms'
+import type { BlogPost, Category, SiteSettings } from '@/lib/cms'
 import type { GraphData } from '@/lib/graph'
-import { cn } from '@/lib/utils'
 import { KnowledgeGraph } from '../graph/KnowledgeGraph'
 
 interface HomePageProps {
   site: SiteSettings | null
   posts: BlogPost[]
-  projects: Project[]
   categories: Category[]
   graphData: GraphData
 }
 
-export function HomePage({ site, posts, projects, categories, graphData }: HomePageProps) {
-  const featuredProjects = projects.filter((project) => project.is_featured).slice(0, 4)
-  const visibleProjects = featuredProjects.length > 0 ? featuredProjects : projects.slice(0, 4)
-  const hasMoreProjects = projects.length > visibleProjects.length
-
+export function HomePage({ site, posts, categories, graphData }: HomePageProps) {
   return (
     <>
       <section className="relative overflow-hidden border-b">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--primary),transparent_82%),transparent_35%),radial-gradient(circle_at_bottom_right,color-mix(in_oklch,var(--chart-1),transparent_80%),transparent_30%)]" />
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-[1.15fr_0.85fr] md:py-24">
+        <div className="mx-auto max-w-6xl px-4 py-16 md:py-24">
           <div>
             <Badge className="mb-5">{site?.hero_badge || 'Next.js + Tailwind 4 + Supabase'}</Badge>
             <h1 className="font-heading text-4xl font-bold tracking-tight md:text-6xl">
@@ -36,11 +29,11 @@ export function HomePage({ site, posts, projects, categories, graphData }: HomeP
             </h1>
             <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
               {site?.hero_description ||
-                'Publish posts, projects, and categories from a protected CMS dashboard. Then connect them through automatic relations and share-ready SEO metadata.'}
+                'Publish posts and categories from a protected CMS dashboard. Then connect them through automatic relations and share-ready SEO metadata.'}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={site?.primary_cta_href || '/projects'} className={buttonVariants({ size: 'lg' })}>
-                {site?.primary_cta_label || 'View projects'}
+                {site?.primary_cta_label || 'View repositories'}
                 <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
               </Link>
               <Link
@@ -52,36 +45,6 @@ export function HomePage({ site, posts, projects, categories, graphData }: HomeP
               </Link>
             </div>
           </div>
-          <Card className="bg-card/80 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-sm">Featured work</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {visibleProjects.length > 0 ? (
-                <>
-                  {visibleProjects.map((project) => (
-                    <Link
-                      key={project.id}
-                      href={`/projects/${project.slug}`}
-                      className="block border bg-background/80 p-4 transition hover:-translate-y-0.5 hover:shadow-md"
-                    >
-                      <h3 className="font-heading text-sm font-medium">{project.title}</h3>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{project.summary}</p>
-                    </Link>
-                  ))}
-                  {hasMoreProjects ? (
-                    <Link href="/projects" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
-                      View all projects
-                    </Link>
-                  ) : null}
-                </>
-              ) : (
-                <div className="border bg-background/80 p-4 text-xs text-muted-foreground">
-                  No published projects yet. Add projects from the builder dashboard.
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </section>
 
@@ -97,7 +60,7 @@ export function HomePage({ site, posts, projects, categories, graphData }: HomeP
         </div>
         <div className="grid gap-5 md:grid-cols-2">
           {posts.slice(0, 2).map((post) => (
-            <ContentCard key={post.id} item={post} type="blog" />
+            <ContentCard key={post.id} item={post} />
           ))}
         </div>
       </section>

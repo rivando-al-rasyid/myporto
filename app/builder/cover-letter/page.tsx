@@ -8,10 +8,9 @@ import { createClient } from '@/lib/supabase/server'
 export default async function CoverLetterPage({ searchParams }: { searchParams: Promise<{ v?: string }> }) {
   const { v } = await searchParams
   const db = await createClient()
-  const [{ resume, versionId }, versions, projectsRes] = await Promise.all([
+  const [{ resume, versionId }, versions] = await Promise.all([
     loadResume(db, v || undefined),
     listResumeVersions(db),
-    db.from('projects').select('id,title,summary').order('sort_order', { ascending: true }),
   ])
 
   return (
@@ -35,7 +34,7 @@ export default async function CoverLetterPage({ searchParams }: { searchParams: 
           ))}
         </div>
       ) : null}
-      <CoverLetterGenerator key={versionId} resume={resume} projects={projectsRes.data ?? []} showPdf={false} />
+      <CoverLetterGenerator key={versionId} resume={resume} showPdf={false} />
     </PageBody>
   )
 }

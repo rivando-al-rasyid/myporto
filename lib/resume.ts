@@ -6,9 +6,6 @@ export interface ResumeProject {
   location?: string
   period: string
   points: string[]
-  // Optional link to a portfolio project; its sub-category tags become the tech stack line.
-  projectId?: string
-  stack?: string[]
 }
 
 // `**keyword**` in a highlight renders bold (the template bolds key terms).
@@ -138,8 +135,6 @@ export function normalizeResume(input: unknown): ResumeData {
     location: str(p.location) || undefined,
     period: str(p.period),
     points: strList(p.points),
-    projectId: str(p.projectId) || undefined,
-    stack: strList(p.stack),
   })
   const experience = rows(r.experience).map((e) => ({
     company: str(e.company),

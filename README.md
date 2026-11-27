@@ -1,6 +1,6 @@
 # Portfolio Knowledge Graph
 
-Next.js 16 portfolio with a Supabase-backed CMS: projects, blog, a knowledge graph that connects them, and a resume / cover letter builder.
+Next.js 16 portfolio with a Supabase-backed CMS: blog, a knowledge graph that connects posts and categories, GitHub repositories on `/projects`, and a resume / cover letter builder.
 
 ## Stack
 
@@ -31,13 +31,13 @@ Apply the database with `supabase db push` (migrations in `supabase/migrations`,
 
 ## Content model
 
-- **Categories** are two levels deep. A top-level category is a skill group; its sub categories are the skills. Tag projects and posts with sub categories to record their tech stack.
+- **Categories** are two levels deep. A top-level category is a skill group; its sub categories are the skills. Tag posts with sub categories to record their tech stack.
 - `On resume` on a category controls whether it appears in the resume Skills section.
 
 ## Resume
 
 - `/builder/resume` holds one resume per target job (a *version*). The `Default` version cannot be deleted; use *Duplicate* to copy any version for a new job.
-- Projects live inside the job they belong to. A project can be linked to a website project, which supplies its title, summary and tech stack when those fields are left empty.
+- Projects live inside the job they belong to.
 - Wrap key terms in `**double asterisks**` in highlights to print them bold.
 - The cover letter generator uses the selected resume version.
 - The resume is private (admin only); there is no public resume page.

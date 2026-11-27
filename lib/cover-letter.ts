@@ -8,7 +8,6 @@ export interface CoverLetterInput {
   hiringManager: string
   jobDescription: string
   tone: LetterTone
-  projects: { title: string; summary: string | null }[]
   extra: string
   today: string
 }
@@ -53,12 +52,6 @@ export function generateCoverLetter(resume: ResumeData, input: CoverLetterInput)
     ? `In my role as ${latest.role} at ${latest.company}, I ${latest.points[0].charAt(0).toLowerCase()}${latest.points[0].slice(1).replace(/\.$/, '')}.`
     : resume.summary
 
-  const projectLine = input.projects.length
-    ? `Recent work I'm proud of includes ${list(
-        input.projects.map((p) => (p.summary ? `${p.title} (${p.summary.replace(/\.$/, '')})` : p.title))
-      )}. You can see more at ${resume.website || 'my portfolio'}.`
-    : ''
-
   const extra = input.extra.trim()
 
   const closing = {
@@ -67,10 +60,7 @@ export function generateCoverLetter(resume: ResumeData, input: CoverLetterInput)
     concise: `I would welcome a conversation. Thank you for your consideration.`,
   }[input.tone]
 
-  const body =
-    input.tone === 'concise'
-      ? [intro, projectLine || experience, extra, closing]
-      : [intro, experience, projectLine, extra, closing]
+  const body = [intro, experience, extra, closing]
 
   return [
     input.today,

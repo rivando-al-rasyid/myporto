@@ -32,10 +32,6 @@ const int = (fd: FormData, key: string, fallback: number) => {
 }
 const status = (fd: FormData): PublishStatus =>
   str(fd, 'status') === 'published' ? 'published' : 'draft'
-const source = (fd: FormData): ContentSource => {
-  const v = str(fd, 'content_source')
-  return v === 'github_readme' || v === 'markdown_url' ? v : 'manual'
-}
 
 function fail(base: string, message: string): never {
   redirect(`${base}${base.includes('?') ? '&' : '?'}error=${encodeURIComponent(message)}`)
@@ -48,73 +44,19 @@ function dbMessage(error: { code?: string; message: string }) {
 
 async function syncCategories(
   db: Db,
-  table: 'blog_post_categories' | 'project_categories',
-  fk: 'blog_post_id' | 'project_id',
   id: string,
   categoryIds: string[]
 ) {
-  await db.from(table).delete().eq(fk, id)
+  await db.from('blog_post_categories').delete().eq('blog_post_id', id)
   if (categoryIds.length) {
     await db
-      .from(table)
-      .insert(categoryIds.map((category_id) => ({ [fk]: id, category_id })))
+      .from('blog_post_categories')
+      .insert(categoryIds.map((category_id) => ({ blog_post_id: id, category_id })))
   }
 }
 
 const categoryIds = (fd: FormData) =>
   fd.getAll('category_ids').filter((v): v is string => typeof v === 'string')
-
-// ---------- Projects ----------
-export async function saveProject(formData: FormData) {
-  const db = await requireDb()
-  const id = str(formData, 'id')
-  const base = id ? `/builder/projects/${id}` : '/builder/projects/new'
-
-  const title = str(formData, 'title')
-  if (!title) fail(base, 'Title is required.')
-  const slug = slugify(str(formData, 'slug') || title)
-  if (!slug) fail(base, 'Slug is required.')
-
-  const row = {
-    title,
-    slug,
-    summary: opt(formData, 'summary'),
-    content: raw(formData, 'content'),
-    content_source: source(formData),
-    source_url: opt(formData, 'source_url'),
-    image_url: opt(formData, 'image_url'),
-    demo_url: opt(formData, 'demo_url'),
-    repo_url: opt(formData, 'repo_url'),
-    status: status(formData),
-    is_featured: bool(formData, 'is_featured'),
-    sort_order: int(formData, 'sort_order', 100),
-    meta_title: opt(formData, 'meta_title'),
-    meta_description: opt(formData, 'meta_description'),
-  }
-
-  const { data, error } = id
-    ? await db
-        .from('projects')
-        .update({ ...row, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select('id')
-        .single()
-    : await db.from('projects').insert(row).select('id').single()
-  if (error) fail(base, dbMessage(error))
-
-  await syncCategories(db, 'project_categories', 'project_id', data.id, categoryIds(formData))
-  revalidatePath('/builder', 'layout')
-  updateTag('content')
-  redirect('/builder/projects')
-}
-
-export async function deleteProject(formData: FormData) {
-  const db = await requireDb()
-  await db.from('projects').delete().eq('id', str(formData, 'id'))
-  revalidatePath('/builder', 'layout')
-  updateTag('content')
-  redirect('/builder/projects')
-}
 
 // ---------- Blog ----------
 export async function saveBlogPost(formData: FormData) {
@@ -176,7 +118,7 @@ export async function saveBlogPost(formData: FormData) {
         .single()
   if (error) fail(base, dbMessage(error))
 
-  await syncCategories(db, 'blog_post_categories', 'blog_post_id', data.id, categoryIds(formData))
+  await syncCategories(db, data.id, categoryIds(formData))
   revalidatePath('/builder', 'layout')
   updateTag('content')
   redirect('/builder/blog')

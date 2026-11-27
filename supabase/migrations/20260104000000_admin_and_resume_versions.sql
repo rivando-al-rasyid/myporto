@@ -51,10 +51,7 @@ begin
       ('categories',            'admin all categories'),
       ('site_settings',         'admin all site settings'),
       ('blog_posts',            'admin all posts'),
-      ('projects',              'admin all projects'),
       ('blog_post_categories',  'admin all post categories'),
-      ('project_categories',    'admin all project categories'),
-      ('queue_share',           'admin all queue'),
       ('resume',                'admin all resume')
     ) as t(tbl, pol)
   loop

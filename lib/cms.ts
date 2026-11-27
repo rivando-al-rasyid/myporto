@@ -33,27 +33,6 @@ export interface BlogPost {
   categories?: Category[]
 }
 
-export interface Project {
-  id: string
-  title: string
-  slug: string
-  summary: string | null
-  content: string
-  content_source: ContentSource | null
-  source_url: string | null
-  image_url: string | null
-  demo_url: string | null
-  repo_url: string | null
-  status: PublishStatus
-  is_featured: boolean
-  sort_order: number
-  meta_title: string | null
-  meta_description: string | null
-  created_at: string
-  updated_at: string
-  categories?: Category[]
-}
-
 export interface SiteSettings {
   id: string
   site_name: string

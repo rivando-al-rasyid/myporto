@@ -1,4 +1,4 @@
-// Categories are skill groups; their sub categories are the skills (and a project's tech stack).
+// Categories are skill groups; their sub categories are the skills.
 
 import type { Category } from '@/lib/cms'
 import type { ResumeData } from '@/lib/resume'
@@ -29,14 +29,6 @@ export function buildResumeSkillGroups(tree: CategoryNode[]): ResumeData['skillG
       items: n.children.filter((c) => c.show_on_resume).map((c) => c.name),
     }))
     .filter((g) => g.items.length > 0)
-}
-
-// A project's tech stack = the sub categories it is tagged with.
-export function techStack(categories: Category[] | undefined): string[] {
-  return (categories ?? [])
-    .filter((c) => c.parent_id)
-    .sort(bySort)
-    .map((c) => c.name)
 }
 
 // Flat, ordered list (group followed by its skills) for selects.

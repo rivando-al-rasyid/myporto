@@ -21,7 +21,7 @@ export function BlogListPage({ posts }: { posts: BlogPost[] }) {
 
       <div className="grid gap-5 md:grid-cols-2">
         {posts.map((post) => (
-          <ContentCard key={post.id} item={post} type="blog" />
+          <ContentCard key={post.id} item={post} />
         ))}
       </div>
     </section>

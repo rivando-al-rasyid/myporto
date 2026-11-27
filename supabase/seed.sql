@@ -9,7 +9,7 @@ values
   ('default', 'Rivando Al Rasyid', 'Open to opportunities',
    'Building products and the systems behind them',
    'Web developer writing about portfolio systems, product engineering and the ideas that connect them.',
-   'View projects', '/projects', 'Read the blog', '/blog')
+   'View GitHub repos', '/projects', 'Read the blog', '/blog')
 on conflict (id) do update set
   site_name = excluded.site_name,
   hero_badge = excluded.hero_badge,
@@ -48,35 +48,6 @@ insert into public.categories (id, name, slug, parent_id, sort_order) values
 on conflict (slug) do update set
   name = excluded.name, parent_id = excluded.parent_id, sort_order = excluded.sort_order;
 
--- ---------- Projects ----------
-insert into public.projects
-  (id, title, slug, summary, content, content_source, repo_url, demo_url,
-   status, is_featured, sort_order, meta_title, meta_description)
-values
-  ('a0000000-0000-4000-8000-000000000001',
-   'Portfolio Knowledge Graph', 'portfolio-knowledge-graph',
-   'A portfolio CMS where posts, projects and categories form an interactive graph.',
-   E'## Overview\n\nA Next.js + Supabase portfolio with a private CMS and a public site.\n\n### Highlights\n\n- Blog and project CMS with draft / published states\n- Interactive knowledge graph of every relation\n- Share queue that feeds an n8n automation\n',
-   'manual', 'https://github.com/example/portfolio', 'https://example.com',
-   'published', true, 10, 'Portfolio Knowledge Graph', 'Next.js and Supabase portfolio with an interactive knowledge graph.'),
-  ('a0000000-0000-4000-8000-000000000002',
-   'Realtime Dashboard', 'realtime-dashboard',
-   'An analytics dashboard with live charts and role-based access.',
-   E'## Overview\n\nA dashboard that streams metrics from Supabase Realtime into responsive charts.\n\n- Row Level Security for per-role access\n- Cached server components for fast first paint\n',
-   'manual', 'https://github.com/example/dashboard', null,
-   'published', false, 20, null, null),
-  ('a0000000-0000-4000-8000-000000000003',
-   'Markdown Notes App', 'markdown-notes-app',
-   'A local-first notes app with markdown editing and sync.',
-   E'## Overview\n\nWork in progress.\n',
-   'manual', null, null,
-   'draft', false, 30, null, null)
-on conflict (slug) do update set
-  title = excluded.title, summary = excluded.summary, content = excluded.content,
-  repo_url = excluded.repo_url, demo_url = excluded.demo_url, status = excluded.status,
-  is_featured = excluded.is_featured, sort_order = excluded.sort_order,
-  meta_title = excluded.meta_title, meta_description = excluded.meta_description;
-
 -- ---------- Blog posts ----------
 insert into public.blog_posts
   (id, title, slug, excerpt, content, status, is_featured, sort_order,
@@ -85,7 +56,7 @@ values
   ('b0000000-0000-4000-8000-000000000001',
    'Building a Portfolio as a Knowledge Graph', 'building-a-portfolio-as-a-knowledge-graph',
    'Why I modelled my portfolio as connected nodes instead of a flat list.',
-   E'## Why a graph?\n\nA flat list hides how ideas relate. Modelling posts, projects and categories as nodes makes those links visible.\n\n## The data model\n\nEvery post and project can belong to many categories. The graph is built from those join tables.\n\n```ts\nconst graph = buildGraphData(posts, projects, categories)\n```\n',
+   E'## Why a graph?\n\nA flat list hides how ideas relate. Modelling posts and categories as nodes makes those links visible.\n\n## The data model\n\nEvery post can belong to many categories. The graph is built from the join tables.\n\n```ts\nconst graph = buildGraphData(posts, categories)\n```\n',
    'published', true, 10,
    'Building a Portfolio as a Knowledge Graph', 'How and why I built my portfolio as an interactive knowledge graph.',
    '2026-01-10 09:00:00+00'),
@@ -107,22 +78,6 @@ on conflict (slug) do update set
   published_at = excluded.published_at;
 
 -- ---------- Relations ----------
-insert into public.project_categories (project_id, category_id) values
-  ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001'),
-  ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000002'),
-  ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000003'),
-  ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000005'),
-  ('a0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002'),
-  ('a0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000003'),
-  ('a0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000005'),
-  ('a0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000004'),
-  -- tech stack (sub categories)
-  ('a0000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000004'),
-  ('a0000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000005'),
-  ('a0000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000004'),
-  ('a0000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000008')
-on conflict do nothing;
-
 insert into public.blog_post_categories (blog_post_id, category_id) values
   ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000004'),
   ('b0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000005'),
@@ -131,11 +86,6 @@ insert into public.blog_post_categories (blog_post_id, category_id) values
   ('b0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001'),
   ('b0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000003')
 on conflict do nothing;
-
--- Published rows above were queued automatically by triggers.
--- Mark one as already posted so the queue shows both states.
-update public.queue_share set is_posted = true
-where blog_post_id = 'b0000000-0000-4000-8000-000000000001';
 
 -- ---------- Resume ----------
 -- `do nothing` so re-running the seed never overwrites what you edited in /builder/resume.

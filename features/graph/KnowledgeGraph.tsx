@@ -11,13 +11,11 @@ import type { GraphData, GraphNode } from '@/lib/graph'
 
 function nodePath(node: GraphNode) {
   if (node.type === 'blog') return `/blog/${node.slug}`
-  if (node.type === 'project') return `/projects/${node.slug}`
   return `/graph?category=${node.slug}`
 }
 
 function nodeColor(type: GraphNode['type']) {
   if (type === 'blog') return 'fill-primary'
-  if (type === 'project') return 'fill-foreground'
   return 'fill-muted-foreground'
 }
 
@@ -28,7 +26,6 @@ function layoutGraph(data: GraphData) {
   const cy = height / 2
 
   const categories = data.nodes.filter((n) => n.type === 'category')
-  const projects = data.nodes.filter((n) => n.type === 'project')
   const blogs = data.nodes.filter((n) => n.type === 'blog')
 
   const nodes: (GraphNode & { x: number; y: number })[] = []
@@ -40,9 +37,8 @@ function layoutGraph(data: GraphData) {
     })
   }
 
-  placeRing(categories, 220) // outer ring
-  placeRing(projects, 120, 0) // middle ring
-  placeRing(blogs, 60, Math.PI / 4) // near center
+  placeRing(categories, 200) // outer ring
+  placeRing(blogs, 80, Math.PI / 4) // near center
 
   const positions = new Map(nodes.map((n) => [n.id, n]))
   return { width, height, nodes, edges: data.edges, positions }
@@ -135,7 +131,7 @@ export function KnowledgeGraph({ data, compact = false }: { data: GraphData; com
             <div>
               <h3 className="font-heading text-sm font-medium">Explore connections</h3>
               <p className="mt-2 text-xs text-muted-foreground">
-                Categories connect posts and projects. Keyword overlap creates extra edges, making the
+                Categories connect posts. Keyword overlap creates extra edges, making the
                 portfolio easier to explore.
               </p>
             </div>

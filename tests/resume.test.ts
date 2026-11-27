@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Category } from '@/lib/cms'
 import { boldParts, normalizeResume } from '@/lib/resume'
-import { buildCategoryTree, buildResumeSkillGroups, techStack } from '@/lib/skills'
+import { buildCategoryTree, buildResumeSkillGroups } from '@/lib/skills'
 
 const cat = (id: string, name: string, parent_id: string | null = null, extra: Partial<Category> = {}): Category => ({
   id,
@@ -83,9 +83,5 @@ describe('skills from categories', () => {
   it('hides groups switched off for the resume', () => {
     const off = categories.map((c) => (c.id === 'f' ? { ...c, show_on_resume: false } : c))
     expect(buildResumeSkillGroups(buildCategoryTree(off)).map((g) => g.category)).toEqual(['Backend Development'])
-  })
-
-  it('uses only sub categories as a project tech stack', () => {
-    expect(techStack([categories[0], categories[2], categories[3]])).toEqual(['Go', 'Gin'])
   })
 })

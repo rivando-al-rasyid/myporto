@@ -21,7 +21,7 @@ const platforms: { id: SharePlatform; label: string }[] = [
 ]
 
 interface ShareButtonProps {
-  entityType: 'blog' | 'project'
+  entityType: 'blog'
   entityId: string
   title: string
   text?: string
