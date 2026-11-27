@@ -54,7 +54,6 @@ export function BlogForm({
         />
         <TextField label="Sort order" name="sort_order" type="number" defaultValue={post?.sort_order ?? 100} hint="Lower shows first." />
         <CheckField label="Featured" name="is_featured" defaultChecked={post?.is_featured} />
-        {post ? <CheckField label="Share again on social media" name="share_again" /> : null}
       </div>
 
       <div className="flex gap-2">

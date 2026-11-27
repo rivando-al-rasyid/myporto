@@ -12,7 +12,6 @@ const titles: Record<string, string> = {
   categories: "Categories",
   resume: "Resume",
   "cover-letter": "Cover letter",
-  queue: "Share queue",
   settings: "Site settings",
 }
 

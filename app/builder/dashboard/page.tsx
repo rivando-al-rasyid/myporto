@@ -17,14 +17,13 @@ export default async function DashboardPage() {
     return where ? q.eq(where.column, where.value) : q
   }
 
-  const [projects, projectsLive, posts, postsLive, categories, queue, recentProjects, recentPosts] =
+  const [projects, projectsLive, posts, postsLive, categories, recentProjects, recentPosts] =
     await Promise.all([
       count('projects'),
       count('projects', { column: 'status', value: 'published' }),
       count('blog_posts'),
       count('blog_posts', { column: 'status', value: 'published' }),
       count('categories'),
-      count('queue_share', { column: 'is_posted', value: false }),
       db.from('projects').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
       db.from('blog_posts').select('id,title,status,updated_at').order('updated_at', { ascending: false }).limit(5),
     ])
@@ -40,7 +39,6 @@ export default async function DashboardPage() {
     { label: 'Projects', value: projectsLive.count ?? 0, note: `${projects.count ?? 0} total, published / all` , href: '/builder/projects' },
     { label: 'Blog posts', value: postsLive.count ?? 0, note: `${posts.count ?? 0} total, published / all`, href: '/builder/blog' },
     { label: 'Categories', value: categories.count ?? 0, note: 'Shared by projects and posts', href: '/builder/categories' },
-    { label: 'Share queue', value: queue.count ?? 0, note: 'Waiting to be posted', href: '/builder/queue' },
   ]
 
   return (
@@ -56,7 +54,7 @@ export default async function DashboardPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>
             <Card className="h-full transition-colors hover:bg-muted/40">

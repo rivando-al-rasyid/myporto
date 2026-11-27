@@ -103,11 +103,6 @@ export async function saveProject(formData: FormData) {
   if (error) fail(base, dbMessage(error))
 
   await syncCategories(db, 'project_categories', 'project_id', data.id, categoryIds(formData))
-  // First publish is queued by a database trigger; this covers sharing an edit again on request.
-  if (id && row.status === 'published' && bool(formData, 'share_again')) {
-    const { error: shareError } = await db.rpc('request_share', { p_project: data.id })
-    if (shareError) console.warn('request_share:', shareError.message)
-  }
   revalidatePath('/builder', 'layout')
   updateTag('content')
   redirect('/builder/projects')
@@ -182,10 +177,6 @@ export async function saveBlogPost(formData: FormData) {
   if (error) fail(base, dbMessage(error))
 
   await syncCategories(db, 'blog_post_categories', 'blog_post_id', data.id, categoryIds(formData))
-  if (id && st === 'published' && bool(formData, 'share_again')) {
-    const { error: shareError } = await db.rpc('request_share', { p_blog: data.id })
-    if (shareError) console.warn('request_share:', shareError.message)
-  }
   revalidatePath('/builder', 'layout')
   updateTag('content')
   redirect('/builder/blog')
@@ -290,65 +281,6 @@ export async function saveSettings(formData: FormData) {
   revalidatePath('/builder', 'layout')
   updateTag('content')
   redirect('/builder/settings?saved=1')
-}
-
-// ---------- Share queue ----------
-export async function setQueuePosted(formData: FormData) {
-  const db = await requireDb()
-  await db
-    .from('queue_share')
-    .update({
-      is_posted: str(formData, 'is_posted') === 'true',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', str(formData, 'id'))
-  revalidatePath('/builder', 'layout')
-  updateTag('content')
-  redirect('/builder/queue')
-}
-
-const SHARE_PLATFORMS = ['x', 'instagram', 'facebook', 'linkedin']
-const SHARE_STATUSES = ['pending', 'posted', 'failed', 'skipped']
-
-// Manual override for one platform (e.g. you posted it by hand, or want to retry it).
-export async function setPlatformStatus(formData: FormData) {
-  const db = await requireDb()
-  const queue_id = str(formData, 'queue_id')
-  const platform = str(formData, 'platform')
-  const status = str(formData, 'status')
-  if (!queue_id || !SHARE_PLATFORMS.includes(platform) || !SHARE_STATUSES.includes(status)) {
-    fail('/builder/queue', 'Invalid platform or status.')
-  }
-
-  const { error } = await db
-    .from('queue_share_posts')
-    .update({
-      status,
-      posted_at: status === 'posted' ? new Date().toISOString() : null,
-      error: null,
-      ...(status === 'pending' ? { post_url: null, attempts: 0 } : {}),
-    })
-    .eq('queue_id', queue_id)
-    .eq('platform', platform)
-  if (error) fail('/builder/queue', error.message)
-
-  revalidatePath('/builder', 'layout')
-  redirect('/builder/queue')
-}
-
-// Queue a blog post or project for all platforms again.
-export async function shareAgain(formData: FormData) {
-  const db = await requireDb()
-  const blog = str(formData, 'blog_post_id')
-  const project = str(formData, 'project_id')
-  const { error } = await db.rpc('request_share', {
-    p_blog: blog || null,
-    p_project: project || null,
-  })
-  if (error) fail('/builder/queue', error.message)
-
-  revalidatePath('/builder', 'layout')
-  redirect('/builder/queue')
 }
 
 // ---------- Resume ----------

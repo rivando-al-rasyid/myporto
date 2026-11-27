@@ -42,32 +42,6 @@ Apply the database with `supabase db push` (migrations in `supabase/migrations`,
 - The cover letter generator uses the selected resume version.
 - The resume is private (admin only); there is no public resume page.
 
-## Social sharing queue
-
-Published blog posts and projects are queued automatically (database trigger). Each queue item has one row per platform in `queue_share_posts`: `x` (thread), `instagram`, `facebook`, `linkedin`, each with a status of `pending`, `posted`, `failed` or `skipped`, plus `post_url`, `posted_at` and `error`. Instagram is `skipped` when the content has no cover image.
-
-- The app does **not** post to social networks itself. Your n8n workflow does, using the service role key (it bypasses RLS).
-- `queue_share.is_posted` is derived: true once no platform is `pending` or `failed`. Old workflows that set `is_posted` directly still work (true marks every open platform posted, false resets them).
-- Editing content does not share again by itself, to avoid duplicate posts. Tick **Share again on social media** when saving an edit, or use **Share again** on `/builder/queue`.
-
-n8n, per platform (example for LinkedIn):
-
-```
-# what is waiting
-GET  /rest/v1/queue_share_posts?platform=eq.linkedin&status=eq.pending
-     &select=queue_id,queue_share(blog_posts(title,slug,excerpt,cover_image),projects(title,slug,summary,image_url))
-
-# after posting
-PATCH /rest/v1/queue_share_posts?queue_id=eq.<id>&platform=eq.linkedin
-      { "status": "posted", "post_url": "https://...", "posted_at": "<now>", "error": null }
-
-# on failure
-PATCH /rest/v1/queue_share_posts?queue_id=eq.<id>&platform=eq.linkedin
-      { "status": "failed", "error": "<message>", "attempts": <n+1> }
-```
-
-Post URLs on your site are `/blog/<slug>` and `/projects/<slug>`.
-
 ## Scripts
 
 ```bash

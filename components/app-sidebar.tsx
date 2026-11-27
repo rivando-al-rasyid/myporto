@@ -20,7 +20,6 @@ import {
   Folder01Icon,
   File01Icon,
   Menu01Icon,
-  Database01Icon,
   Settings05Icon,
   CommandIcon,
   UserIcon,
@@ -34,7 +33,6 @@ const navMain = [
   { title: "Categories", url: "/builder/categories", icon: <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} /> },
   { title: "Resume", url: "/builder/resume", icon: <HugeiconsIcon icon={UserIcon} strokeWidth={2} /> },
   { title: "Cover letter", url: "/builder/cover-letter", icon: <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} /> },
-  { title: "Share queue", url: "/builder/queue", icon: <HugeiconsIcon icon={Database01Icon} strokeWidth={2} /> },
   { title: "Site settings", url: "/builder/settings", icon: <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} /> },
 ]
 
