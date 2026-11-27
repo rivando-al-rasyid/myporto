@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { ProjectListPage } from '@/features/projects/ProjectListPage';
+import { GitHubRepos } from '@/features/projects/GitHubRepos';
 import { getPublishedProjects } from '@/lib/contentService';
 
 export const metadata: Metadata = {
@@ -9,5 +11,12 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const projects = await getPublishedProjects();
-  return <ProjectListPage projects={projects} />;
+  return (
+    <>
+      <ProjectListPage projects={projects} />
+      <Suspense fallback={null}>
+        <GitHubRepos />
+      </Suspense>
+    </>
+  );
 }
